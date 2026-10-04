@@ -10,7 +10,13 @@
   "homepage": "https://kody-w.github.io/rapp-chatgpt/",
   "repository": "https://github.com/kody-w/rapp-chatgpt",
   "license": "MIT",
-  "keywords": ["ai-agents", "agent-builder", "automation", "python", "rapp"],
+  "keywords": [
+    "ai-agents",
+    "agent-builder",
+    "automation",
+    "python",
+    "rapp"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -89,7 +95,8 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "RAPP Agent Builder is free and does not sell products or process payments."
+        "commerce_description": "RAPP Agent Builder is free and does not sell products or process payments.",
+        "demo_recording_url": "https://kody-w.github.io/rapp-chatgpt/demo.mp4"
       },
       "publication": {
         "countries": [],

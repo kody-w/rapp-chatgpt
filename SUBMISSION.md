@@ -40,5 +40,4 @@ The app asks for no account and stores nothing you send it.
 
 ## Screenshots
 
-Capture from ChatGPT developer mode once the server is connected: (1) the build request, (2) the
-check passing, (3) registry results.
+Demo video: https://kody-w.github.io/rapp-chatgpt/demo.mp4 (59 s, recorded in ChatGPT developer mode, set as review.demo_recording_url).
