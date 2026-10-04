@@ -15,4 +15,4 @@ az group create -n "$RG" -l "$LOC" -o none
 az storage account show -n "$SA" -g "$RG" -o none 2>/dev/null || az storage account create -n "$SA" -g "$RG" -l "$LOC" --sku Standard_LRS --allow-blob-public-access false -o none
 az functionapp show -n "$APP" -g "$RG" -o none 2>/dev/null || az functionapp create -n "$APP" -g "$RG" -s "$SA" --flexconsumption-location "$LOC" --runtime node --runtime-version 22 -o none
 func azure functionapp publish "$APP" --javascript
-echo "MCP endpoint: https://$(az functionapp show -n "$APP" -g "$RG" --query defaultHostName -o tsv)/mcp"
+echo "MCP endpoint: https://$APP.azurewebsites.net/mcp"

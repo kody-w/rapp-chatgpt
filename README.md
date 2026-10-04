@@ -8,7 +8,7 @@ the agent in the free RAPP Brainstem.
 It sits on top of the ecosystem and never changes the Brainstem: it reads the public registry and
 points at the public installer.
 
-- MCP endpoint: `https://<worker>/mcp` (streamable HTTP, stateless, JSON responses)
+- MCP endpoint: `https://rapp-agent-builder.azurewebsites.net/mcp` (streamable HTTP, stateless, JSON responses)
 - Site, privacy, terms: https://kody-w.github.io/rapp-chatgpt/
 
 ## Tools
