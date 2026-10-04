@@ -10,8 +10,9 @@
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { x402HTTPResourceServer } from "@x402/core/http";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { orderQuote, fulfilmentReady } from "./domains.js";
 
-export const PAID_ROUTES = ["/x402/world"];
+export const PAID_ROUTES = ["/x402/world", "/x402/domains/register"];
 
 let cached = null;
 
@@ -33,6 +34,17 @@ async function server(cfg) {
     "GET /x402/world": {
       accepts: { scheme: "exact", network: cfg.network, payTo: cfg.payTo, price: cfg.price },
       description: "DOGG World Check: a fresh, verified snapshot of world numbers (Bitcoin, FX, earthquakes, space weather, ISS) with the public tick, time and SHA-256 fingerprint.",
+      mimeType: "application/json",
+    },
+    // Price is the live registrar price plus margin for the domain in ?domain=, quoted per order.
+    "POST /x402/domains/register": {
+      accepts: {
+        scheme: "exact",
+        network: cfg.network,
+        payTo: cfg.payTo,
+        price: async (ctx) => `$${(await orderQuote(ctx.adapter.getQueryParam?.("domain"))).price_usd}`,
+      },
+      description: "RAPP Domains: register an available domain name. Charged only if registration succeeds.",
       mimeType: "application/json",
     },
   });
@@ -67,6 +79,14 @@ export async function handlePaid(request, env, produce, log = () => {}, cors = {
   const cfg = paidConfig(env);
   if (!cfg.payTo) {
     return new Response(JSON.stringify({ error: "Paid access is not switched on yet." }), { status: 503, headers: { "Content-Type": "application/json", ...cors } });
+  }
+  if (url.pathname === "/x402/domains/register") {
+    if (!fulfilmentReady(env)) {
+      return new Response(JSON.stringify({ error: "Domain registration is not switched on yet." }), { status: 503, headers: { "Content-Type": "application/json", ...cors } });
+    }
+    try { await orderQuote(url.searchParams.get("domain")); } catch (e) {
+      return new Response(JSON.stringify({ error: `Can't sell this domain: ${e.message}.` }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+    }
   }
   const http = await server(cfg);
   const result = await http.processHTTPRequest({

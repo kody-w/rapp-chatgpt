@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.kody-w/rapp-domains",
+  "description": "Check and price up to 20 domain names at once; agents can register them, paying per request.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/kody-w/rapp-chatgpt",
+    "source": "github"
+  },
+  "websiteUrl": "https://kody-w.github.io/rapp-chatgpt/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/domains/mcp"
+    }
+  ]
+}

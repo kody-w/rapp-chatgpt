@@ -155,6 +155,32 @@ const TOOLS = [
     },
     annotations: READ_ONLY,
   },
+  {
+    name: "check_domain",
+    title: "Check and price domain names",
+    description:
+      "Use when the user wants a domain name, is naming a business or project, or asks whether a domain is taken. Checks up to 20 full domain names " +
+      "(you can suggest variations and check them together) and returns whether each is available and its price.",
+    inputSchema: {
+      type: "object",
+      properties: { domains: { type: "array", items: { type: "string" }, maxItems: 20, description: "Full domain names, e.g. [\"getrapp.ai\", \"getrapp.com\"]" } },
+      required: ["domains"],
+      additionalProperties: false,
+    },
+    annotations: { ...READ_ONLY, openWorldHint: true },
+  },
+  {
+    name: "register_domain",
+    title: "How to register a domain",
+    description: "Use when the user wants to buy an available domain. Explains how to register it: AI agents pay per call; people ask us and we register it for them. Nothing is bought by this tool.",
+    inputSchema: {
+      type: "object",
+      properties: { domain: { type: "string", description: "The domain to register" } },
+      required: ["domain"],
+      additionalProperties: false,
+    },
+    annotations: READ_ONLY,
+  },
 ];
 
 // Each ChatGPT listing is the same server with its own set of tools.
@@ -173,6 +199,13 @@ const PROFILES = {
     instructions:
       "Find free, ready-made AI agents for a task in the public RAPP Agent Registry: find_agents, then get_agent_code for the best match, then " +
       "use_agent_here to run it in this chat on the user's own data. Nothing to install.",
+  },
+  domains: {
+    server: { name: "rapp-domains", version: "1.0.0" },
+    tools: ["check_domain", "register_domain"],
+    instructions:
+      "Help people and agents find and register domain names: suggest good names, check them with check_domain (up to 20 at once), " +
+      "and explain how to buy with register_domain. Prices are in US dollars and include the first term.",
   },
   world: {
     server: { name: "dogg-world-check", version: "1.0.0" },
@@ -487,6 +520,8 @@ async function callTool(name, args) {
     case "share_agent": return shareAgent(args);
     case "world_now": return worldNow();
     case "fingerprint_text": return fingerprintText(args);
+    case "check_domain": return (await import("./domains.js")).checkDomains(args);
+    case "register_domain": return (await import("./domains.js")).registerInfo(args, SITE);
     default: return null;
   }
 }
@@ -542,6 +577,12 @@ function llmsTxt(origin) {
 - [RAPP Agent Builder](${origin}/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
 - [RAR Agent Finder](${origin}/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
 - [DOGG World Check](${origin}/world/mcp): world_now, fingerprint_text
+- [RAPP Domains](${origin}/domains/mcp): check_domain, register_domain
+
+## Pay per call (x402 v2, USDC)
+
+- GET ${origin}/x402/world: fresh verified world snapshot, $0.001
+- POST ${origin}/x402/domains/register?domain=NAME: register an available domain; the 402 response quotes the price; charged only if registration succeeds
 
 ## A2A
 
@@ -682,10 +723,17 @@ export default {
     if (url.pathname.startsWith(PAID_PREFIX)) {
       const { handlePaid, PAID_ROUTES } = await import("./paid.js");
       if (!PAID_ROUTES.includes(url.pathname)) return json({ error: "not found" }, 404);
-      return handlePaid(request, env, async () => {
-        const r = await worldNow();
-        return { ...r.structured, summary: r.text };
-      }, (e) => console.log(JSON.stringify({ evt: "paid_call", ...e })), CORS);
+      const produce = url.pathname === "/x402/domains/register"
+        ? async () => {
+            const { orderQuote, registerAtPorkbun } = await import("./domains.js");
+            const q = await orderQuote(url.searchParams.get("domain"));
+            return registerAtPorkbun(env, q.domain, q.years);
+          }
+        : async () => {
+            const r = await worldNow();
+            return { ...r.structured, summary: r.text };
+          };
+      return handlePaid(request, env, produce, (e) => console.log(JSON.stringify({ evt: "paid_call", ...e })), CORS);
     }
     if (url.pathname === "/llms.txt") return new Response(llmsTxt(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
     if (url.pathname === "/.well-known/mcp.json") return json(mcpWellKnown(url.origin));
@@ -699,7 +747,7 @@ export default {
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, listings: Object.fromEntries(Object.entries(PROFILES).map(([k, p]) => [p.server.name, { version: p.server.version, mcp: `${url.origin}${k === "builder" ? "" : "/" + k}/mcp` }])), site: SITE });
     }
-    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world" }[url.pathname];
+    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world", "/domains/mcp": "domains" }[url.pathname];
     if (!route) return json({ error: "not found" }, 404);
     const profile = PROFILES[route];
     if (request.method === "GET") return new Response("SSE stream not offered; POST JSON-RPC to /mcp.", { status: 405, headers: { Allow: "POST", ...CORS } });

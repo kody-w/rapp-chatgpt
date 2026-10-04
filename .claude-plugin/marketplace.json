@@ -20,6 +20,11 @@
       "name": "dogg-world-check",
       "source": "./claude-plugins/dogg-world-check",
       "description": "Verified, citable numbers about the world right now, each with a public tick and SHA-256 fingerprint."
+    },
+    {
+      "name": "rapp-domains",
+      "source": "./claude-plugins/rapp-domains",
+      "description": "Check and price domain names, and learn how to register them."
     }
   ]
 }

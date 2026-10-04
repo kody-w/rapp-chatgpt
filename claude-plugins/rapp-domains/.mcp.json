@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rapp-domains": {
+      "type": "http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/domains/mcp"
+    }
+  }
+}

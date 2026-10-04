@@ -9,7 +9,7 @@ USER_NAME=$(az account show --query user.name -o tsv)
 [[ "$USER_NAME" == *@microsoft.com ]] && { echo "Refusing: logged in as a Microsoft work account ($USER_NAME)"; exit 1; }
 RG=${RG:-rapp-chatgpt}; LOC=${LOC:-eastus2}; APP=${APP:-rapp-agent-builder}
 SA=${SA:-rappagentbuilder$(az account show --query id -o tsv | tr -d - | cut -c1-6)}
-rm -rf src/core && mkdir -p src/core && cp ../src/index.js ../src/template.js ../src/paid.js src/core/
+rm -rf src/core && mkdir -p src/core && cp ../src/index.js ../src/template.js ../src/paid.js ../src/domains.js src/core/
 npm install --omit=dev --silent
 az group create -n "$RG" -l "$LOC" -o none
 az storage account show -n "$SA" -g "$RG" -o none 2>/dev/null || az storage account create -n "$SA" -g "$RG" -l "$LOC" --sku Standard_LRS --allow-blob-public-access false -o none
