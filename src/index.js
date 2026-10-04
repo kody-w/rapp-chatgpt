@@ -342,9 +342,16 @@ const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
 export default {
-  async fetch(request) {
+  async fetch(request, env = {}) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+    // OpenAI domain verification: serve exactly the token the plugin portal issues.
+    if (url.pathname === "/.well-known/openai-apps-challenge") {
+      const token = env.OPENAI_APPS_CHALLENGE || globalThis.process?.env?.OPENAI_APPS_CHALLENGE;
+      return token
+        ? new Response(token.trim(), { headers: { "Content-Type": "text/plain" } })
+        : new Response("not configured", { status: 404 });
+    }
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, server: SERVER, mcp: `${url.origin}/mcp`, site: SITE });
     }

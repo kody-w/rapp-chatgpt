@@ -1,0 +1,100 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "rapp-agent-builder",
+  "version": "1.0.0",
+  "description": "Turns an idea or a meeting transcript into a working single-file AI agent, checks it, and explains how to run it on your own computer with the free RAPP Brainstem.",
+  "author": {
+    "name": "Wildhaven Homes LLC",
+    "url": "https://kody-w.github.io/rapp-chatgpt/"
+  },
+  "homepage": "https://kody-w.github.io/rapp-chatgpt/",
+  "repository": "https://github.com/kody-w/rapp-chatgpt",
+  "license": "MIT",
+  "keywords": ["ai-agents", "agent-builder", "automation", "python", "rapp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "RAPP Agent Builder",
+        "shortDescription": "Turn any idea into an AI agent",
+        "longDescription": "Describe a task, or paste a meeting transcript, and RAPP Agent Builder turns it into a working AI agent: one Python file you can read, keep, and run on your own computer.\n\nBefore building, it searches the public RAPP Agent Registry, about 1,700 free agents, in case one already does the job, and can show you any agent's code. When it builds a new one, it uses the official template and checks the finished file against the template's rules, fixing problems until it passes. Then it tells you how to run the agent with the free RAPP Brainstem on Mac, Windows, or Linux.\n\nGood for turning a recurring process into an agent, prototyping an assistant for your team from a meeting, or finding an existing agent before you write one.\n\nAll tools are read-only. The plugin never runs code, installs anything, or connects to your accounts. It needs no account or API key and stores nothing you send it.",
+        "developerName": "Wildhaven Homes LLC",
+        "category": "Productivity",
+        "capabilities": [
+          "Build a single-file AI agent from an idea or a meeting transcript",
+          "Check an agent file against the template's rules until it passes",
+          "Search about 1,700 free agents in the public RAPP Agent Registry",
+          "Show the full code of any registry agent",
+          "Explain how to run an agent on Mac, Windows, or Linux"
+        ],
+        "websiteURL": "https://kody-w.github.io/rapp-chatgpt/",
+        "supportURL": "https://github.com/kody-w/rapp-chatgpt/issues",
+        "privacyPolicyURL": "https://kody-w.github.io/rapp-chatgpt/privacy.html",
+        "termsOfServiceURL": "https://kody-w.github.io/rapp-chatgpt/terms.html",
+        "defaultPrompt": [
+          "Build me an agent that sorts invoices into pay now, review, or hold",
+          "Is there already an agent that analyzes meeting transcripts?",
+          "Turn this meeting transcript into an agent I can run"
+        ],
+        "brandColor": "#1F6F4A",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Build a new agent from a plain-language idea",
+              "prompt": "Build me an agent that sorts invoices into pay now, review, or hold based on amount and due date.",
+              "tools_triggered": "get_agent_template, check_agent",
+              "expected_behavior": "Fetches the template, writes invoice_triage_agent.py, calls check_agent until it returns PASSED, then shows the file and offers run steps."
+            },
+            {
+              "description": "Turn a described process into an agent",
+              "prompt": "Every Monday our team lists overdue support tickets by priority and emails each owner. Turn that into an agent.",
+              "tools_triggered": "get_agent_template, check_agent",
+              "expected_behavior": "Writes a single-file agent that groups tickets by priority and drafts owner emails, and check_agent returns PASSED."
+            },
+            {
+              "description": "Find an existing agent before building",
+              "prompt": "Is there already an agent that analyzes meeting transcripts?",
+              "tools_triggered": "find_agents",
+              "expected_behavior": "Lists registry matches, including Meeting Analyzer (@cat-agent-skills/meeting_analyzer), with one-line descriptions."
+            },
+            {
+              "description": "Read a registry agent's code",
+              "prompt": "Show me the code for @cat-agent-skills/meeting_analyzer.",
+              "tools_triggered": "get_agent_code",
+              "expected_behavior": "Returns the full Python source of the Meeting Analyzer agent."
+            },
+            {
+              "description": "Explain how to run an agent on Windows",
+              "prompt": "How do I run a RAPP agent on Windows?",
+              "tools_triggered": "how_to_run_agent",
+              "expected_behavior": "Four steps: the PowerShell install command for the free RAPP Brainstem, GitHub sign-in, the agents folder path, and opening http://localhost:7071."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Making payments is out of scope",
+              "prompt": "Pay all my overdue invoices from my bank account."
+            },
+            {
+              "description": "Unrelated request",
+              "prompt": "What's the weather in Seattle today?"
+            },
+            {
+              "description": "Deploying to the user's systems is out of scope",
+              "prompt": "Deploy this agent to my company's production servers."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "RAPP Agent Builder is free and does not sell products or process payments."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "First release: build single-file AI agents from an idea or transcript, check them against the template, search the public RAPP Agent Registry, and get run steps for the free RAPP Brainstem. Read-only; no account needed."
+      }
+    }
+  }
+}
