@@ -83,12 +83,13 @@ h2{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.1;letter-spacing:-.03em;ma
 
 /* apps bento: exactly three cells */
 .bento{display:grid;gap:16px}
-@media (min-width:900px){.bento{grid-template-columns:1.3fr 1fr;grid-template-rows:auto auto auto}.bento .big{grid-row:span 3}}
+@media (min-width:900px){.bento{grid-template-columns:1.3fr 1fr;grid-template-rows:auto auto auto auto}.bento .big{grid-row:span 4}}
 .cell{border-radius:var(--r);padding:32px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
 .cell.big{background:var(--accent-soft)}
 .cell.f{background:var(--tint-2)}
 .cell.w{background:var(--tint-3)}
 .cell.d{background:var(--tint-4)}
+.cell.n{background:var(--tint-2)}
 .cell img.mark{width:52px;height:52px;border-radius:12px}
 .cell h3{margin:0;font-size:1.45rem;letter-spacing:-.02em}
 .cell p{margin:0;color:var(--muted)}
@@ -127,7 +128,7 @@ footer .legal{margin-left:auto}
 </style>
 </head>
 <body>
-<main data-marker="rapp-brand-v2">
+<main data-marker="rapp-brand-v3">
 <nav><div class="wrap">
   <a class="brand" href="#top"><img src="icon-64.png" alt="">RAPP</a>
   <div class="links"><a href="#how">How it works</a><a href="#apps">Apps</a><a href="#get">Get it</a></div>
@@ -173,7 +174,7 @@ footer .legal{margin-left:auto}
 </div></section>
 
 <section id="apps"><div class="wrap">
-  <h2>Four apps. Same idea.</h2>
+  <h2>Five apps. Same idea.</h2>
   <p class="lead">Each one answers a different kind of question, inside the assistant you already use.</p>
   <div class="bento">
     <div class="cell big">
@@ -194,6 +195,12 @@ footer .legal{margin-left:auto}
       <h3>DOGG World Check</h3>
       <p>Live numbers about the world with a public fingerprint, so anyone can check them later.</p>
       <div class="try">"What's the Bitcoin price right now, verifiably?"</div>
+    </div>
+    <div class="cell n">
+      <img class="mark" src="img/mark-names.png" alt="">
+      <h3>RAPP Name Finder</h3>
+      <p>Name your business and check that the domains and GitHub name are actually free.</p>
+      <div class="try">"I'm starting a dog-walking business in Atlanta. What should I call it?"</div>
     </div>
     <div class="cell d">
       <img class="mark" src="img/mark-domains.png" alt="">
@@ -229,10 +236,16 @@ footer .legal{margin-left:auto}
       <li>Agent Finder: <code>https://rapp-agent-builder.azurewebsites.net/finder/mcp</code></li>
       <li>World Check: <code>https://rapp-agent-builder.azurewebsites.net/world/mcp</code></li>
       <li>Domains: <code>https://rapp-agent-builder.azurewebsites.net/domains/mcp</code></li>
+      <li>Name Finder: <code>https://rapp-agent-builder.azurewebsites.net/names/mcp</code></li>
       <li>AI agents can pay per request (x402, USDC, no account): <code>GET /x402/world</code> and <code>POST /x402/domains/register?domain=NAME</code>. Details in <a href="https://rapp-agent-builder.azurewebsites.net/llms.txt">llms.txt</a>.</li>
       <li>Claude and other assistants: add a custom connector with one of the addresses above. No sign-in needed.</li>
       <li>Claude Code: <code>/plugin marketplace add kody-w/rapp-chatgpt</code> then <code>/plugin install rapp-agent-builder@rapp</code></li>
       <li>ChatGPT developer mode: Settings, then Plugins, then Create custom MCP server with an address above.</li>
+      <li>RAPP Agent Builder: <a href="https://vscode.dev/redirect/mcp/install?name=rapp-agent-builder&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//rapp-agent-builder.azurewebsites.net/mcp%22%7D">add to VS Code</a> · <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=rapp-agent-builder&config=eyJ1cmwiOiJodHRwczovL3JhcHAtYWdlbnQtYnVpbGRlci5henVyZXdlYnNpdGVzLm5ldC9tY3AifQ==">add to Cursor</a></li>
+      <li>RAR Agent Finder: <a href="https://vscode.dev/redirect/mcp/install?name=rar-agent-finder&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//rapp-agent-builder.azurewebsites.net/finder/mcp%22%7D">add to VS Code</a> · <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=rar-agent-finder&config=eyJ1cmwiOiJodHRwczovL3JhcHAtYWdlbnQtYnVpbGRlci5henVyZXdlYnNpdGVzLm5ldC9maW5kZXIvbWNwIn0=">add to Cursor</a></li>
+      <li>RAPP Name Finder: <a href="https://vscode.dev/redirect/mcp/install?name=rapp-name-finder&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//rapp-agent-builder.azurewebsites.net/names/mcp%22%7D">add to VS Code</a> · <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=rapp-name-finder&config=eyJ1cmwiOiJodHRwczovL3JhcHAtYWdlbnQtYnVpbGRlci5henVyZXdlYnNpdGVzLm5ldC9uYW1lcy9tY3AifQ==">add to Cursor</a></li>
+      <li>RAPP Domains: <a href="https://vscode.dev/redirect/mcp/install?name=rapp-domains&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//rapp-agent-builder.azurewebsites.net/domains/mcp%22%7D">add to VS Code</a> · <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=rapp-domains&config=eyJ1cmwiOiJodHRwczovL3JhcHAtYWdlbnQtYnVpbGRlci5henVyZXdlYnNpdGVzLm5ldC9kb21haW5zL21jcCJ9">add to Cursor</a></li>
+      <li>DOGG World Check: <a href="https://vscode.dev/redirect/mcp/install?name=dogg-world-check&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A//rapp-agent-builder.azurewebsites.net/world/mcp%22%7D">add to VS Code</a> · <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=dogg-world-check&config=eyJ1cmwiOiJodHRwczovL3JhcHAtYWdlbnQtYnVpbGRlci5henVyZXdlYnNpdGVzLm5ldC93b3JsZC9tY3AifQ==">add to Cursor</a></li>
     </ul>
   </details>
 </div></section>

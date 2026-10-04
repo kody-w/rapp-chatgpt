@@ -380,6 +380,7 @@ async function loadRegistry() {
     author: a.author,
     version: a.version,
     file: a._file,
+    sha256: a._sha256,
   }));
   registryCache = { at: Date.now(), agents };
   return agents;
@@ -427,7 +428,11 @@ async function getAgentCode({ name }) {
   const r = await fetch(RAW_BASE + a.file, { cf: { cacheTtl: 900 } });
   if (!r.ok) return { text: `Could not load ${name} (status ${r.status}).`, structured: { found: false }, isError: true };
   const code = await r.text();
-  return { text: `${a.display_name} (${a.name} v${a.version})\n\n${code}`, structured: { found: true, name: a.name, code_url: RAW_BASE + a.file, code } };
+  // Verify the bytes against the registry's pinned hash before handing them over.
+  const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const verified = !!a.sha256 && digest === a.sha256;
+  const note = verified ? "Verified: matches the registry's SHA-256." : a.sha256 ? "WARNING: does not match the registry's SHA-256. Don't run it." : "No registry hash on file for this agent.";
+  return { text: `${a.display_name} (${a.name} v${a.version})\n${note}\n\n${code}`, structured: { found: true, name: a.name, version: a.version, code_url: RAW_BASE + a.file, sha256: digest, registry_sha256: a.sha256 || null, verified, code } };
 }
 
 function useHere({ filename }) {
