@@ -4,6 +4,9 @@
 
 import { TEMPLATE } from "./template.js";
 
+// The paid agent API (x402) loads its libraries only when a paid route is hit.
+const PAID_PREFIX = "/x402/";
+
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const REGISTRY_URL = "https://kody-w.github.io/RAR/registry.json";
 const RAW_BASE = "https://raw.githubusercontent.com/kody-w/RAR/main/";
@@ -675,6 +678,14 @@ export default {
       return token
         ? new Response(token.trim(), { headers: { "Content-Type": "text/plain" } })
         : new Response("not configured", { status: 404 });
+    }
+    if (url.pathname.startsWith(PAID_PREFIX)) {
+      const { handlePaid, PAID_ROUTES } = await import("./paid.js");
+      if (!PAID_ROUTES.includes(url.pathname)) return json({ error: "not found" }, 404);
+      return handlePaid(request, env, async () => {
+        const r = await worldNow();
+        return { ...r.structured, summary: r.text };
+      }, (e) => console.log(JSON.stringify({ evt: "paid_call", ...e })), CORS);
     }
     if (url.pathname === "/llms.txt") return new Response(llmsTxt(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
     if (url.pathname === "/.well-known/mcp.json") return json(mcpWellKnown(url.origin));
