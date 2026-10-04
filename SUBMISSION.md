@@ -10,7 +10,7 @@ Submit at platform.openai.com (Apps), from a verified OpenAI platform account.
 | Website | https://kody-w.github.io/rapp-chatgpt/ |
 | Privacy policy | https://kody-w.github.io/rapp-chatgpt/privacy.html |
 | Terms | https://kody-w.github.io/rapp-chatgpt/terms.html |
-| Icon | docs/icon-64.png (64×64, under 5 KB) |
+| Icon | docs/icon-64.png (64×64, under 5 KB); docs/icon-256.png (256×256, under 10 KB) for the plugin form |
 | MCP server | https://rapp-agent-builder.azurewebsites.net/mcp |
 | Authentication | None |
 | Commerce | None, no purchases |
