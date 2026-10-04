@@ -118,5 +118,22 @@ export async function handlePaid(request, env, produce, log = () => {}, cors = {
     return new Response(JSON.stringify({ error: "Payment could not be settled.", reason: settled.errorReason }), { status: 402, headers: { "Content-Type": "application/json", ...settled.headers, ...cors } });
   }
   log({ route: url.pathname, outcome: "paid", network: settled.network });
+  // Every settled payment becomes a receipt in the books. A ledger failure never takes back the customer's result.
+  try {
+    // The ledger ships privately (estate repo); public builds simply skip it.
+    const { appendReceipt } = await import("./ledger.js").catch(() => ({ appendReceipt: async () => {} }));
+    await appendReceipt(env, {
+      service: url.pathname === "/x402/world" ? "dogg-world-check" : "rapp-domains",
+      route: url.pathname,
+      amount: result.paymentRequirements.amount,
+      asset: result.paymentRequirements.asset,
+      network: settled.network || result.paymentRequirements.network,
+      payer: settled.payer,
+      tx: settled.transaction,
+      detail: url.searchParams.get("domain") || "",
+    });
+  } catch (e) {
+    log({ route: url.pathname, outcome: "ledger_write_failed", error: e.message });
+  }
   return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json", ...settled.headers, ...cors } });
 }

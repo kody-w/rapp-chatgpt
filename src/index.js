@@ -735,6 +735,30 @@ export default {
           };
       return handlePaid(request, env, produce, (e) => console.log(JSON.stringify({ evt: "paid_call", ...e })), CORS);
     }
+    if (url.pathname === "/ledger/clients" && request.method === "POST") {
+      const key = env.LEDGER_ADMIN_KEY || globalThis.process?.env?.LEDGER_ADMIN_KEY;
+      if (!key || request.headers.get("x-admin-key") !== key) return json({ error: "not found" }, 404);
+      const ledger = await import("./ledger.js").catch(() => null);
+      if (!ledger) return json({ error: "not found" }, 404);
+      const { registerClient } = ledger;
+      try { return json(await registerClient(env, await request.json())); } catch (e) { return json({ error: e.message }, 400); }
+    }
+    if (url.pathname === "/ledger/statement") {
+      // Admin sees the whole company's books; a client key sees only that client's own receipts.
+      const key = env.LEDGER_ADMIN_KEY || globalThis.process?.env?.LEDGER_ADMIN_KEY;
+      const ledger = await import("./ledger.js").catch(() => null);
+      if (!ledger) return json({ error: "not found" }, 404);
+      const { statement, toCsv, clientForKey } = ledger;
+      const isAdmin = key && request.headers.get("x-admin-key") === key;
+      const client = isAdmin ? null : await clientForKey(env, request.headers.get("x-client-key"));
+      if (!isAdmin && !client) return json({ error: "not found" }, 404);
+      const month = url.searchParams.get("month") || new Date().toISOString().slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(month)) return json({ error: "month must look like 2026-10" }, 400);
+      const st = { ...(await statement(env, month, client?.wallet)), ...(client ? { client: client.name } : {}) };
+      return url.searchParams.get("format") === "csv"
+        ? new Response(toCsv(st), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="wildhaven-ledger-${month}.csv"` } })
+        : json(st);
+    }
     if (url.pathname === "/llms.txt") return new Response(llmsTxt(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
     if (url.pathname === "/.well-known/mcp.json") return json(mcpWellKnown(url.origin));
     if (url.pathname === "/.well-known/agent-card.json" || url.pathname === "/.well-known/agent.json") return json(agentCard(url.origin));
