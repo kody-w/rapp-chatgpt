@@ -89,7 +89,8 @@ export function registerInfo({ domain }, site) {
     text:
       `To register ${d || "a domain"}:\n` +
       `- AI agents: pay per call over x402 at POST https://rapp-agent-builder.azurewebsites.net/x402/domains/register with {"domain":"${d || "example.com"}"}. ` +
-      `The 402 response states the exact price in USDC; the domain is registered only after payment, and you are charged only if registration succeeds.\n` +
+      `The 402 response states the exact price in USDC; the domain is registered only after payment, and you are charged only if registration succeeds. ` +
+      `x402 clients cap each payment at $1 by default, so raise your client's per-payment limit to cover the quoted price.\n` +
       `- People: ask at ${site}contact.html and we'll register it for you.`,
     structured: { domain: d, agent_endpoint: "/x402/domains/register", contact: `${site}contact.html` },
   };

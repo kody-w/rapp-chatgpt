@@ -582,7 +582,7 @@ function llmsTxt(origin) {
 ## Pay per call (x402 v2, USDC)
 
 - GET ${origin}/x402/world: fresh verified world snapshot, $0.001
-- POST ${origin}/x402/domains/register?domain=NAME: register an available domain; the 402 response quotes the price; charged only if registration succeeds
+- POST ${origin}/x402/domains/register?domain=NAME: register an available domain; the 402 response quotes the price; charged only if registration succeeds (raise your x402 client's default $1 per-payment cap first)
 
 ## A2A
 
