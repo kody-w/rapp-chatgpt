@@ -19,19 +19,19 @@
 /* Shape rule: buttons are full pills, every image frame and panel is 14px. */
 :root{
   --bg:#fafaf9; --surface:#ffffff; --ink:#18181b; --muted:#52525b; --line:#e4e4e7;
-  --accent:#1f6f4a; --accent-ink:#ffffff; --accent-soft:#e7f2ec; --tint-2:#eef1f6; --tint-3:#f3eff6;
+  --accent:#1f6f4a; --accent-ink:#ffffff; --accent-soft:#e7f2ec; --tint-2:#eef1f6; --tint-3:#f3eff6; --tint-4:#f6efe9;
   --r:14px; --shadow:0 20px 50px -24px rgba(24,48,36,.35);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#111312; --surface:#18191a; --ink:#ececea; --muted:#a1a1a0; --line:#2a2c2b;
-    --accent:#5cc492; --accent-ink:#0d1f16; --accent-soft:#16271e; --tint-2:#171c24; --tint-3:#1d1822;
+    --accent:#5cc492; --accent-ink:#0d1f16; --accent-soft:#16271e; --tint-2:#171c24; --tint-3:#1d1822; --tint-4:#221a15;
     --shadow:0 20px 50px -24px rgba(0,0,0,.7);
   }
 }
 :root[data-theme="dark"]{
   --bg:#111312; --surface:#18191a; --ink:#ececea; --muted:#a1a1a0; --line:#2a2c2b;
-  --accent:#5cc492; --accent-ink:#0d1f16; --accent-soft:#16271e; --tint-2:#171c24; --tint-3:#1d1822;
+  --accent:#5cc492; --accent-ink:#0d1f16; --accent-soft:#16271e; --tint-2:#171c24; --tint-3:#1d1822; --tint-4:#221a15;
   --shadow:0 20px 50px -24px rgba(0,0,0,.7);
 }
 *{box-sizing:border-box}
@@ -83,11 +83,12 @@ h2{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.1;letter-spacing:-.03em;ma
 
 /* apps bento: exactly three cells */
 .bento{display:grid;gap:16px}
-@media (min-width:900px){.bento{grid-template-columns:1.3fr 1fr;grid-template-rows:auto auto}.bento .big{grid-row:span 2}}
+@media (min-width:900px){.bento{grid-template-columns:1.3fr 1fr;grid-template-rows:auto auto auto}.bento .big{grid-row:span 3}}
 .cell{border-radius:var(--r);padding:32px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
 .cell.big{background:var(--accent-soft)}
 .cell.f{background:var(--tint-2)}
 .cell.w{background:var(--tint-3)}
+.cell.d{background:var(--tint-4)}
 .cell img.mark{width:52px;height:52px;border-radius:12px}
 .cell h3{margin:0;font-size:1.45rem;letter-spacing:-.02em}
 .cell p{margin:0;color:var(--muted)}
@@ -126,7 +127,7 @@ footer .legal{margin-left:auto}
 </style>
 </head>
 <body>
-<main data-marker="rapp-brand-v1">
+<main data-marker="rapp-brand-v2">
 <nav><div class="wrap">
   <a class="brand" href="#top"><img src="icon-64.png" alt="">RAPP</a>
   <div class="links"><a href="#how">How it works</a><a href="#apps">Apps</a><a href="#get">Get it</a></div>
@@ -172,7 +173,7 @@ footer .legal{margin-left:auto}
 </div></section>
 
 <section id="apps"><div class="wrap">
-  <h2>Three apps. Same idea.</h2>
+  <h2>Four apps. Same idea.</h2>
   <p class="lead">Each one answers a different kind of question, inside the assistant you already use.</p>
   <div class="bento">
     <div class="cell big">
@@ -193,6 +194,12 @@ footer .legal{margin-left:auto}
       <h3>DOGG World Check</h3>
       <p>Live numbers about the world with a public fingerprint, so anyone can check them later.</p>
       <div class="try">"What's the Bitcoin price right now, verifiably?"</div>
+    </div>
+    <div class="cell d">
+      <img class="mark" src="img/mark-domains.png" alt="">
+      <h3>RAPP Domains</h3>
+      <p>Brainstorm a name and see which domains you can actually get, with prices, 20 at a time.</p>
+      <div class="try">"Suggest names for my bakery and check which .com domains are free."</div>
     </div>
   </div>
 </div></section>
@@ -221,6 +228,8 @@ footer .legal{margin-left:auto}
       <li>Agent Builder: <code>https://rapp-agent-builder.azurewebsites.net/mcp</code></li>
       <li>Agent Finder: <code>https://rapp-agent-builder.azurewebsites.net/finder/mcp</code></li>
       <li>World Check: <code>https://rapp-agent-builder.azurewebsites.net/world/mcp</code></li>
+      <li>Domains: <code>https://rapp-agent-builder.azurewebsites.net/domains/mcp</code></li>
+      <li>AI agents can pay per request (x402, USDC, no account): <code>GET /x402/world</code> and <code>POST /x402/domains/register?domain=NAME</code>. Details in <a href="https://rapp-agent-builder.azurewebsites.net/llms.txt">llms.txt</a>.</li>
       <li>Claude and other assistants: add a custom connector with one of the addresses above. No sign-in needed.</li>
       <li>Claude Code: <code>/plugin marketplace add kody-w/rapp-chatgpt</code> then <code>/plugin install rapp-agent-builder@rapp</code></li>
       <li>ChatGPT developer mode: Settings, then Plugins, then Create custom MCP server with an address above.</li>
