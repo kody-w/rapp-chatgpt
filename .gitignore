@@ -5,3 +5,4 @@ azure/node_modules/
 azure/src/core/
 azure/local.settings.json
 *.zip
+launch/
