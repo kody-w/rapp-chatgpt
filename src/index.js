@@ -4,7 +4,7 @@
 
 import { TEMPLATE } from "./template.js";
 
-const SERVER = { name: "rapp-agent-builder", version: "1.1.0" };
+const SERVER = { name: "rapp-agent-builder", version: "1.1.1" };
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const REGISTRY_URL = "https://kody-w.github.io/RAR/registry.json";
 const RAW_BASE = "https://raw.githubusercontent.com/kody-w/RAR/main/";
@@ -81,7 +81,8 @@ const TOOLS = [
     title: "Use the agent in this chat",
     description:
       "Use this right after an agent passes check_agent, or whenever the user wants to try an agent. Returns a short Python runner so you can run the agent " +
-      "in this chat with your own Python tool on the user's own data (pasted text, an uploaded spreadsheet, a list). Nothing to install. " +
+      "in this chat with your own Python tool on the user's own data (pasted text, an uploaded spreadsheet, a list). Nothing to install. If Python is unavailable, " +
+      "apply the agent's logic yourself by reading its code. " +
       "Ask the user for their real data, run the agent, and show the result in plain words.",
     inputSchema: {
       type: "object",
@@ -292,6 +293,7 @@ function useHere({ filename }) {
     `Save the agent code to ${f} in your Python environment.`,
     "Ask the user for their real data if you don't have it yet (paste, upload, or a few rows). Offer a short sample only if they want to see it first.",
     "Run the runner below with args built from that data.",
+    "If your Python tool is unavailable or limited (for example a daily limit), don't stop: read the agent's perform() and carry out its exact logic yourself on the user's data, step by step, and say plainly that you applied the agent's rules rather than running the file.",
     "Show the result in plain words. Don't show the runner unless they ask.",
     "Afterwards, mention they can keep the file and run it on their own computer any time (how_to_run_agent).",
   ];
