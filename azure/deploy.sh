@@ -11,7 +11,7 @@ USER_NAME=$(az account show --query user.name -o tsv)
 [ "$USER_NAME" = "$RAPP_AZ_USER" ] || { echo "Refusing: signed in as $USER_NAME, expected $RAPP_AZ_USER"; exit 1; }
 RG=${RG:-rapp-chatgpt}; LOC=${LOC:-eastus2}; APP=${APP:-rapp-agent-builder}
 SA=${SA:-rappagentbuilder$(az account show --query id -o tsv | tr -d - | cut -c1-6)}
-rm -rf src/core && mkdir -p src/core && cp ../src/index.js ../src/template.js ../src/paid.js ../src/domains.js src/core/
+rm -rf src/core && mkdir -p src/core && cp ../src/index.js ../src/template.js ../src/paid.js ../src/domains.js ../src/signals.js src/core/
 # Private parts (ledger, org model) come from the estate repo when it is present beside this one.
 [ -f ../../estate/ledger.js ] && cp ../../estate/ledger.js ../../estate/org.js src/core/
 npm install --omit=dev --silent

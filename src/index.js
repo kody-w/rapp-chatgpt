@@ -181,13 +181,27 @@ const TOOLS = [
     },
     annotations: READ_ONLY,
   },
+  {
+    name: "request_service",
+    title: "Ask us to build something",
+    description:
+      "Use when the person wants something none of these tools can do and says yes to passing the request on. Records only the request text " +
+      "they agree to send (no name or contact). Ask before calling it.",
+    inputSchema: {
+      type: "object",
+      properties: { request: { type: "string", description: "What they want, in a sentence, as they agreed to send it" } },
+      required: ["request"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  },
 ];
 
 // Each ChatGPT listing is the same server with its own set of tools.
 const PROFILES = {
   builder: {
     server: { name: "rapp-agent-builder", version: "1.2.0" },
-    tools: ["get_agent_template", "check_agent", "use_agent_here", "find_agents", "get_agent_code", "share_agent", "how_to_run_agent"],
+    tools: ["get_agent_template", "check_agent", "use_agent_here", "find_agents", "get_agent_code", "share_agent", "how_to_run_agent", "request_service"],
     instructions:
       "Build single-file AI agents people can use immediately: get_agent_template, write the agent, check_agent until it passes, then use_agent_here " +
       "to run it in this chat on the user's own data. Nothing to install. Use find_agents to reuse existing ones. how_to_run_agent is only for keeping " +
@@ -195,21 +209,21 @@ const PROFILES = {
   },
   finder: {
     server: { name: "rar-agent-finder", version: "1.0.0" },
-    tools: ["find_agents", "get_agent_code", "use_agent_here", "how_to_run_agent"],
+    tools: ["find_agents", "get_agent_code", "use_agent_here", "how_to_run_agent", "request_service"],
     instructions:
       "Find free, ready-made AI agents for a task in the public RAPP Agent Registry: find_agents, then get_agent_code for the best match, then " +
       "use_agent_here to run it in this chat on the user's own data. Nothing to install.",
   },
   domains: {
     server: { name: "rapp-domains", version: "1.0.0" },
-    tools: ["check_domain", "register_domain"],
+    tools: ["check_domain", "register_domain", "request_service"],
     instructions:
       "Help people and agents find and register domain names: suggest good names, check them with check_domain (up to 20 at once), " +
       "and explain how to buy with register_domain. Prices are in US dollars and include the first term.",
   },
   world: {
     server: { name: "dogg-world-check", version: "1.0.0" },
-    tools: ["world_now", "fingerprint_text"],
+    tools: ["world_now", "fingerprint_text", "request_service"],
     instructions:
       "Give verified, citable numbers about the world right now with world_now: always quote the tick number, time and fingerprint with the numbers. " +
       "Use fingerprint_text to check whether texts are identical.",
@@ -503,6 +517,8 @@ async function fingerprintText({ text, expected }) {
   return { text: line, structured: out };
 }
 
+let currentListing = "";
+let activeEnv = {};
 async function callTool(name, args) {
   switch (name) {
     case "get_agent_template": return getTemplate();
@@ -520,6 +536,7 @@ async function callTool(name, args) {
     case "share_agent": return shareAgent(args);
     case "world_now": return worldNow();
     case "fingerprint_text": return fingerprintText(args);
+    case "request_service": return (await import("./signals.js")).recordRequest(activeEnv, { request: args.request, listing: currentListing });
     case "check_domain": return (await import("./domains.js")).checkDomains(args);
     case "register_domain": return (await import("./domains.js")).registerInfo(args, SITE);
     default: return null;
@@ -551,6 +568,7 @@ async function handleRpc(msg, profile = PROFILES.builder) {
       const tool = tools.find((t) => t.name === params.name);
       if (!tool) return err(-32602, `Unknown tool: ${params.name}`);
       try {
+        currentListing = profile.server.name;
         const r = await callTool(params.name, params.arguments || {});
         usage(profile, params.name, !r.isError);
         return ok({ content: [{ type: "text", text: r.text }], structuredContent: r.structured, isError: !!r.isError });
@@ -711,6 +729,7 @@ const json = (body, status = 200) =>
 
 export default {
   async fetch(request, env = {}) {
+    activeEnv = env;
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     // OpenAI domain verification: serve exactly the token the plugin portal issues.
@@ -734,6 +753,12 @@ export default {
             return { ...r.structured, summary: r.text };
           };
       return handlePaid(request, env, produce, (e) => console.log(JSON.stringify({ evt: "paid_call", ...e })), CORS);
+    }
+    if (url.pathname === "/signals") {
+      const key = env.LEDGER_ADMIN_KEY || globalThis.process?.env?.LEDGER_ADMIN_KEY;
+      if (!key || request.headers.get("x-admin-key") !== key) return json({ error: "not found" }, 404);
+      const day = url.searchParams.get("day") || new Date().toISOString().slice(0, 10);
+      return json({ day, requests: await (await import("./signals.js")).listRequests(env, day) });
     }
     if (url.pathname === "/ledger/clients" && request.method === "POST") {
       const key = env.LEDGER_ADMIN_KEY || globalThis.process?.env?.LEDGER_ADMIN_KEY;
