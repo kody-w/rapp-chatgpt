@@ -46,5 +46,11 @@ The default `az` login on this Mac is the Microsoft work tenant. Always use `AZU
 
 - **Claude Code:** `/plugin marketplace add kody-w/rapp-chatgpt`, then `/plugin install rapp-agent-builder@rapp` (or `rar-agent-finder@rapp`, `dogg-world-check@rapp`).
 - **Claude.ai / any MCP client:** add a custom connector with the server URL, no auth.
-- **MCP Registry:** `registry/*.server.json`. Publishing needs `mcp-publisher login github` as kody-w (device code, Kody approves), then `mcp-publisher publish` per file.
+- **MCP Registry:** PUBLISHED 2026-10-04, all three active as `io.github.kody-w/{rapp-agent-builder,rar-agent-finder,dogg-world-check}`. Bump `version` and rerun `mcp-publisher publish registry/<name>.server.json` on changes (login: `mcp-publisher login github`, device code).
+- **Glama:** imports from the official registry. Once https://glama.ai/mcp/connectors/io.github.kody-w/rapp-agent-builder stops returning 404, open the PR to punkpeye/awesome-remote-mcp-servers (entry format in its CONTRIBUTING.md: name linked to the website, endpoint in backticks, Glama badge line, `🔓 - ` one-sentence description ≤120 chars; add 🤖🤖🤖 to the PR title).
+- **Smithery, mcp.so:** need Kody's sign-in on their sites; submit the three server URLs.
 - **Anthropic connector directory:** submission form, Kody.
+
+## Agent-readable discovery (live)
+
+- `https://rapp-agent-builder.azurewebsites.net/llms.txt`, `/.well-known/mcp.json`, `/.well-known/agent-card.json` (A2A 1.0 + 0.3), JSON-RPC at `/a2a` (`SendMessage` and `message/send`). Copies in `docs/` and `docs/.well-known/` take effect at a custom domain's root.
