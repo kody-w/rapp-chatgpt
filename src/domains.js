@@ -24,8 +24,11 @@ export function normalizeDomain(input) {
   return d;
 }
 
+// Registrar prices are strings and use thousands separators ("2,060.25").
+export const money = (v) => Number(String(v ?? "").replace(/,/g, ""));
+
 export function quote(registrarPerYear, years) {
-  const cost = Number(registrarPerYear) * years;
+  const cost = money(registrarPerYear) * years;
   return Math.round((cost * (1 + MARGIN_PCT) + MARGIN_FLAT) * 100) / 100;
 }
 
@@ -70,7 +73,7 @@ export async function checkDomains({ domains }) {
       status,
       years,
       price_usd: price ? quote(price.registration, years) : null,
-      renewal_per_year_usd: price ? Math.round(Number(price.renewal) * (1 + MARGIN_PCT) * 100) / 100 : null,
+      renewal_per_year_usd: price ? Math.round(money(price.renewal) * (1 + MARGIN_PCT) * 100) / 100 : null,
       supported: !!price,
     };
   }));
@@ -121,7 +124,7 @@ async function registrarQuote(c, domain) {
   if (q.avail !== "yes") throw new Error(`${domain} is not available`);
   if (q.premium === "yes") throw new Error(`${domain} is a premium domain, not sold through this service yet`);
   const years = Number(q.minDuration) || 1;
-  return { years, cost_cents: Math.round(Number(q.price) * years * 100), per_year: Number(q.price) };
+  return { years, cost_cents: Math.round(money(q.price) * years * 100), per_year: money(q.price) };
 }
 
 export async function orderQuote(domain, env = {}) {
