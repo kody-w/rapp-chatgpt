@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dogg-world-check": {
+      "type": "http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/world/mcp"
+    }
+  }
+}

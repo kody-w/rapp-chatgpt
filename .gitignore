@@ -4,4 +4,4 @@ node_modules/
 azure/node_modules/
 azure/src/core/
 azure/local.settings.json
-rapp-agent-builder-plugin.zip
+*.zip

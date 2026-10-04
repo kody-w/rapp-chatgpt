@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.kody-w/dogg-world-check",
+  "description": "Verified, citable world numbers right now, each with a public tick and SHA-256 fingerprint.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/kody-w/rapp-chatgpt",
+    "source": "github"
+  },
+  "websiteUrl": "https://kody-w.github.io/rapp-chatgpt/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/world/mcp"
+    }
+  ]
+}

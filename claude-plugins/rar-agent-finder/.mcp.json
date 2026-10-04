@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rar-agent-finder": {
+      "type": "http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/finder/mcp"
+    }
+  }
+}

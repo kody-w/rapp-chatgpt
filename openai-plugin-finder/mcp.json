@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "rar-agent-finder": {
+      "type": "streamable-http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/finder/mcp"
+    }
+  }
+}

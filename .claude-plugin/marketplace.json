@@ -1,0 +1,25 @@
+{
+  "name": "rapp",
+  "description": "RAPP apps for AI assistants: build agents, find agents, and get verified world numbers.",
+  "owner": {
+    "name": "Wildhaven Homes LLC",
+    "url": "https://kody-w.github.io/rapp-chatgpt/"
+  },
+  "plugins": [
+    {
+      "name": "rapp-agent-builder",
+      "source": "./claude-plugins/rapp-agent-builder",
+      "description": "Turn any idea or meeting transcript into a working single-file AI agent, check it, and use it right away."
+    },
+    {
+      "name": "rar-agent-finder",
+      "source": "./claude-plugins/rar-agent-finder",
+      "description": "Find a free, ready-made AI agent for a task in the public RAPP Agent Registry (about 1,700 agents)."
+    },
+    {
+      "name": "dogg-world-check",
+      "source": "./claude-plugins/dogg-world-check",
+      "description": "Verified, citable numbers about the world right now, each with a public tick and SHA-256 fingerprint."
+    }
+  ]
+}

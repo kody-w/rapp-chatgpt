@@ -1,19 +1,21 @@
 # When OpenAI approves the account
 
-Checkpoint `v1.1.1`. Everything below is ready; nothing is waiting on code.
+Checkpoint `v1.2.0`. Three listings, one server. Everything below is ready; nothing is waiting on code.
 
 | Piece | State |
 |---|---|
 | MCP server | Live on Azure Functions (personal subscription, rg `rapp-chatgpt`): https://rapp-agent-builder.azurewebsites.net/mcp — v1.1.1, 6 tools |
 | Site, privacy, terms | https://kody-w.github.io/rapp-chatgpt/ |
 | Demo video | https://kody-w.github.io/rapp-chatgpt/demo.mp4 (set as `review.demo_recording_url`) |
-| Plugin ZIP | Attached to the `v1.1.1` GitHub release; rebuild with the command below |
+| Listings | `openai-plugin/` RAPP Agent Builder (`/mcp`), `openai-plugin-finder/` RAR Agent Finder (`/finder/mcp`), `openai-plugin-world/` DOGG World Check (`/world/mcp`) |
+| Plugin ZIPs | Attached to the latest GitHub release; rebuild with the command below |
+| Other assistants | Claude Code marketplace (`.claude-plugin/`), MCP Registry manifests (`registry/`) |
 | Verification | Business check (Persona) submitted 2026-10-04, pending |
 
 ## Steps
 
 1. Kody: confirm the organization shows **Verified** at platform.openai.com → Settings → Organization.
-2. Kody: drag the ZIP onto platform.openai.com/plugins → "Upload new or existing plugin".
+2. Kody: drag each ZIP onto platform.openai.com/plugins → "Upload new or existing plugin" (builder first; finder and world after it is accepted, one a week).
 3. Copy the domain-verification token the portal shows, then:
    ```bash
    AZURE_CONFIG_DIR=~/.azure-personal az functionapp config appsettings set \
@@ -31,7 +33,7 @@ Checkpoint `v1.1.1`. Everything below is ready; nothing is waiting on code.
 ## Commands
 
 ```bash
-(cd openai-plugin && zip -qr -X ../rapp-agent-builder-plugin.zip plugin.json mcp.json assets)   # build the ZIP
+for d in openai-plugin openai-plugin-finder openai-plugin-world; do (cd $d && zip -qr -X ../$d.zip plugin.json mcp.json assets); done   # build the ZIPs
 node --test test/plugin_package.test.mjs          # listing limits
 node test/check_real_agents.mjs ../RAR            # checker vs. every registry agent
 test/mcp_smoke.sh https://rapp-agent-builder.azurewebsites.net
@@ -39,3 +41,10 @@ AZURE_CONFIG_DIR=~/.azure-personal az login --use-device-code --tenant wildfeuer
 ```
 
 The default `az` login on this Mac is the Microsoft work tenant. Always use `AZURE_CONFIG_DIR=~/.azure-personal`; `azure/deploy.sh` does, and refuses an @microsoft.com account.
+
+## Other directories (no OpenAI approval needed)
+
+- **Claude Code:** `/plugin marketplace add kody-w/rapp-chatgpt`, then `/plugin install rapp-agent-builder@rapp` (or `rar-agent-finder@rapp`, `dogg-world-check@rapp`).
+- **Claude.ai / any MCP client:** add a custom connector with the server URL, no auth.
+- **MCP Registry:** `registry/*.server.json`. Publishing needs `mcp-publisher login github` as kody-w (device code, Kody approves), then `mcp-publisher publish` per file.
+- **Anthropic connector directory:** submission form, Kody.

@@ -4,7 +4,6 @@
 
 import { TEMPLATE } from "./template.js";
 
-const SERVER = { name: "rapp-agent-builder", version: "1.1.1" };
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const REGISTRY_URL = "https://kody-w.github.io/RAR/registry.json";
 const RAW_BASE = "https://raw.githubusercontent.com/kody-w/RAR/main/";
@@ -107,7 +106,79 @@ const TOOLS = [
     },
     annotations: READ_ONLY,
   },
+  {
+    name: "share_agent",
+    title: "Share an agent with everyone",
+    description:
+      "Use only when the user says they want to share an agent they built. Checks the agent and scans it for personal details " +
+      "(emails, phone numbers, secrets), then explains how to publish it to the free public RAPP Agent Registry under their own GitHub account. " +
+      "Nothing is published by this tool.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filename: { type: "string", description: "Agent file name, ending in _agent.py" },
+        code: { type: "string", description: "The full Python source of the agent" },
+      },
+      required: ["filename", "code"],
+      additionalProperties: false,
+    },
+    annotations: READ_ONLY,
+  },
+  {
+    name: "world_now",
+    title: "Verified snapshot of the world right now",
+    description:
+      "Use when the user asks what is happening in the world right now and wants numbers they can trust and cite: Bitcoin and crypto market, " +
+      "currency exchange rates, earthquakes in the past hour, space weather, where the International Space Station is, and more. " +
+      "Every snapshot carries its public tick number, time and SHA-256 fingerprint so anyone can check it later.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    annotations: { ...READ_ONLY, openWorldHint: true },
+  },
+  {
+    name: "fingerprint_text",
+    title: "Fingerprint a piece of text",
+    description:
+      "Use when the user wants to know whether two texts are exactly identical, or wants a fingerprint to compare a document against later. " +
+      "Returns the SHA-256 fingerprint of the exact text, and whether it matches an expected fingerprint if one is given. " +
+      "It does not store the text or prove when it was written.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "The exact text to fingerprint" },
+        expected: { type: "string", description: "Optional fingerprint (64 hex characters) to compare against" },
+      },
+      required: ["text"],
+      additionalProperties: false,
+    },
+    annotations: READ_ONLY,
+  },
 ];
+
+// Each ChatGPT listing is the same server with its own set of tools.
+const PROFILES = {
+  builder: {
+    server: { name: "rapp-agent-builder", version: "1.2.0" },
+    tools: ["get_agent_template", "check_agent", "use_agent_here", "find_agents", "get_agent_code", "share_agent", "how_to_run_agent"],
+    instructions:
+      "Build single-file AI agents people can use immediately: get_agent_template, write the agent, check_agent until it passes, then use_agent_here " +
+      "to run it in this chat on the user's own data. Nothing to install. Use find_agents to reuse existing ones. how_to_run_agent is only for keeping " +
+      "an agent on their own computer later. share_agent only when the user asks to share.",
+  },
+  finder: {
+    server: { name: "rar-agent-finder", version: "1.0.0" },
+    tools: ["find_agents", "get_agent_code", "use_agent_here", "how_to_run_agent"],
+    instructions:
+      "Find free, ready-made AI agents for a task in the public RAPP Agent Registry: find_agents, then get_agent_code for the best match, then " +
+      "use_agent_here to run it in this chat on the user's own data. Nothing to install.",
+  },
+  world: {
+    server: { name: "dogg-world-check", version: "1.0.0" },
+    tools: ["world_now", "fingerprint_text"],
+    instructions:
+      "Give verified, citable numbers about the world right now with world_now: always quote the tick number, time and fingerprint with the numbers. " +
+      "Use fingerprint_text to check whether texts are identical.",
+  },
+};
 
 // ---------- tool implementations ----------
 
@@ -296,6 +367,7 @@ function useHere({ filename }) {
     "If your Python tool is unavailable or limited (for example a daily limit), don't stop: read the agent's perform() and carry out its exact logic yourself on the user's data, step by step, and say plainly that you applied the agent's rules rather than running the file.",
     "Show the result in plain words. Don't show the runner unless they ask.",
     "Afterwards, mention they can keep the file and run it on their own computer any time (how_to_run_agent).",
+    `If they need it connected to their real systems (accounting software, email, a CRM) or set up for a whole team, mention they can ask for help at ${CONTACT}.`,
   ];
   return {
     text: "Use the agent right here, nothing to install:\n" + steps.map((s, i) => `${i + 1}. ${s}`).join("\n") + "\n\n```python\n" + runner + "\n```",
@@ -321,6 +393,75 @@ function howToRun({ os, filename }) {
   };
 }
 
+const CONTACT = SITE + "contact.html";
+
+export function scanPersonal(code) {
+  const found = [];
+  const emails = (code.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []).filter((e) => !/example\.(com|org)$/i.test(e));
+  if (emails.length) found.push(`email addresses (${[...new Set(emails)].slice(0, 3).join(", ")})`);
+  if (/(\+?1[ .-]?)?\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/.test(code)) found.push("a phone number");
+  if (/\b\d{3}-\d{2}-\d{4}\b/.test(code)) found.push("something shaped like a US Social Security number");
+  if (/\b(sk|ghp|gho|xox[abp])[-_][A-Za-z0-9_-]{16,}/.test(code)) found.push("an API key or token");
+  return found;
+}
+
+function shareAgent({ filename, code }) {
+  const check = checkAgent(filename, code);
+  const personal = scanPersonal(code || "");
+  if (!check.passed) {
+    return { text: "Not ready to share yet. Fix these first:\n- " + check.problems.join("\n- "), structured: { ready: false, problems: check.problems, personal } };
+  }
+  if (personal.length) {
+    return {
+      text: "Not ready to share: the agent contains " + personal.join(", ") + ". Remove them, check again, then share.",
+      structured: { ready: false, problems: [], personal },
+    };
+  }
+  const steps = [
+    "Save the agent file.",
+    "Open https://kody-w.github.io/RAR/submit.html and sign in with GitHub. It publishes under your own account.",
+    "Upload the file and submit. The registry checks it automatically, and once it's accepted anyone can find and use it.",
+  ];
+  return {
+    text: "Ready to share. Nothing personal found.\n" + steps.map((x, i) => `${i + 1}. ${x}`).join("\n"),
+    structured: { ready: true, steps, submit_url: "https://kody-w.github.io/RAR/submit.html" },
+  };
+}
+
+async function worldNow() {
+  const r = await fetch("https://kody-w.github.io/dogg/orient.json", { cf: { cacheTtl: 60 } });
+  if (!r.ok) throw new Error(`world feed returned ${r.status}`);
+  const d = await r.json();
+  const w = d.world || {};
+  const x = w.data || {};
+  const lines = [];
+  if (x.btc_usd) lines.push(`Bitcoin: $${Number(x.btc_usd.spot).toLocaleString("en-US", { maximumFractionDigits: 0 })}`);
+  if (x.crypto_market) lines.push(`Crypto market: $${(Number(x.crypto_market.total_mcap_usd) / 1e12).toFixed(2)} trillion, Bitcoin ${x.crypto_market.btc_dominance_pct}% of it`);
+  if (x.fx_usd) lines.push("1 US dollar = " + Object.entries(x.fx_usd).map(([k, v]) => `${v} ${k}`).join(", "));
+  if (x.earthquakes_past_hour) lines.push(`Earthquakes in the past hour: ${x.earthquakes_past_hour.count} (largest magnitude ${x.earthquakes_past_hour.max_mag})`);
+  if (x.space_weather) lines.push(`Space weather Kp index: ${x.space_weather.kp}`);
+  if (x.iss) lines.push(`Space Station position: ${x.iss.lat}, ${x.iss.lon}`);
+  if (x.btc_block_height) lines.push(`Bitcoin block height: ${x.btc_block_height.height}`);
+  const proof = { tick: w.tick, time_utc: w.utc, fingerprint: w.frame_hash, tick_fingerprint: w.tick_frame, source: "https://kody-w.github.io/dogg/orient.json" };
+  return {
+    text: lines.join("\n") + `\n\nVerified snapshot: tick ${proof.tick} at ${proof.time_utc}, fingerprint ${proof.fingerprint}. Anyone can check it at ${proof.source}.`,
+    structured: { data: x, proof },
+  };
+}
+
+async function fingerprintText({ text, expected }) {
+  const bytes = new TextEncoder().encode(text || "");
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const out = { fingerprint: hex, characters: (text || "").length };
+  let line = `SHA-256 fingerprint: ${hex}`;
+  if (expected) {
+    out.matches = expected.trim().toLowerCase() === hex;
+    line += out.matches ? "\nMatches the expected fingerprint: the text is exactly the same." : "\nDoes NOT match the expected fingerprint: the text is different.";
+  }
+  return { text: line, structured: out };
+}
+
 async function callTool(name, args) {
   switch (name) {
     case "get_agent_template": return getTemplate();
@@ -335,13 +476,17 @@ async function callTool(name, args) {
     case "get_agent_code": return getAgentCode(args);
     case "use_agent_here": return useHere(args);
     case "how_to_run_agent": return howToRun(args);
+    case "share_agent": return shareAgent(args);
+    case "world_now": return worldNow();
+    case "fingerprint_text": return fingerprintText(args);
     default: return null;
   }
 }
 
 // ---------- MCP JSON-RPC ----------
 
-async function handleRpc(msg) {
+async function handleRpc(msg, profile = PROFILES.builder) {
+  const tools = TOOLS.filter((t) => profile.tools.includes(t.name));
   const { id, method, params = {} } = msg;
   const ok = (result) => ({ jsonrpc: "2.0", id, result });
   const err = (code, message) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
@@ -353,19 +498,21 @@ async function handleRpc(msg) {
       return ok({
         protocolVersion: v,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: SERVER,
-        instructions: "Build single-file AI agents people can use immediately: get_agent_template, write the agent, check_agent until it passes, then use_agent_here to run it in this chat on the user's own data. Nothing to install. Use find_agents to reuse existing ones. how_to_run_agent is only for keeping an agent on their own computer later.",
+        serverInfo: profile.server,
+        instructions: profile.instructions,
       });
     }
     case "ping": return ok({});
-    case "tools/list": return ok({ tools: TOOLS });
+    case "tools/list": return ok({ tools });
     case "tools/call": {
-      const tool = TOOLS.find((t) => t.name === params.name);
+      const tool = tools.find((t) => t.name === params.name);
       if (!tool) return err(-32602, `Unknown tool: ${params.name}`);
       try {
         const r = await callTool(params.name, params.arguments || {});
+        usage(profile, params.name, !r.isError);
         return ok({ content: [{ type: "text", text: r.text }], structuredContent: r.structured, isError: !!r.isError });
       } catch (e) {
+        usage(profile, params.name, false);
         return ok({ content: [{ type: "text", text: `Error: ${e.message}` }], isError: true });
       }
     }
@@ -373,6 +520,11 @@ async function handleRpc(msg) {
     case "prompts/list": return ok({ prompts: [] });
     default: return err(-32601, `Method not found: ${method}`);
   }
+}
+
+// Usage counting: which listing and tool, and whether it worked. Never arguments or content.
+function usage(profile, tool, ok) {
+  console.log(JSON.stringify({ evt: "tool_call", listing: profile.server.name, tool, ok }));
 }
 
 const CORS = {
@@ -397,9 +549,11 @@ export default {
         : new Response("not configured", { status: 404 });
     }
     if (url.pathname === "/" || url.pathname === "/health") {
-      return json({ ok: true, server: SERVER, mcp: `${url.origin}/mcp`, site: SITE });
+      return json({ ok: true, listings: Object.fromEntries(Object.entries(PROFILES).map(([k, p]) => [p.server.name, { version: p.server.version, mcp: `${url.origin}${k === "builder" ? "" : "/" + k}/mcp` }])), site: SITE });
     }
-    if (url.pathname !== "/mcp") return json({ error: "not found" }, 404);
+    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world" }[url.pathname];
+    if (!route) return json({ error: "not found" }, 404);
+    const profile = PROFILES[route];
     if (request.method === "GET") return new Response("SSE stream not offered; POST JSON-RPC to /mcp.", { status: 405, headers: { Allow: "POST", ...CORS } });
     if (request.method === "DELETE") return new Response(null, { status: 204, headers: CORS });
     if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -407,10 +561,10 @@ export default {
     let body;
     try { body = await request.json(); } catch { return json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400); }
     if (Array.isArray(body)) {
-      const out = (await Promise.all(body.map(handleRpc))).filter(Boolean);
+      const out = (await Promise.all(body.map((m) => handleRpc(m, profile)))).filter(Boolean);
       return out.length ? json(out) : new Response(null, { status: 202, headers: CORS });
     }
-    const out = await handleRpc(body);
+    const out = await handleRpc(body, profile);
     return out ? json(out) : new Response(null, { status: 202, headers: CORS });
   },
 };

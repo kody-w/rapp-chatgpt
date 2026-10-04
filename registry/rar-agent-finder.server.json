@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.kody-w/rar-agent-finder",
+  "description": "Find a free, ready-made AI agent for a task in the public RAPP Agent Registry.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/kody-w/rapp-chatgpt",
+    "source": "github"
+  },
+  "websiteUrl": "https://kody-w.github.io/rapp-chatgpt/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/finder/mcp"
+    }
+  ]
+}
