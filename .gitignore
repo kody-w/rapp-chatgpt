@@ -1,3 +1,6 @@
 node_modules/
 .wrangler/
 .dev.vars
+azure/node_modules/
+azure/src/core/
+azure/local.settings.json
