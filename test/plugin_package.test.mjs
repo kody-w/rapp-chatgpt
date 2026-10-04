@@ -8,6 +8,7 @@ const packages = {
   "openai-plugin-finder": "https://rapp-agent-builder.azurewebsites.net/finder/mcp",
   "openai-plugin-world": "https://rapp-agent-builder.azurewebsites.net/world/mcp",
   "openai-plugin-domains": "https://rapp-agent-builder.azurewebsites.net/domains/mcp",
+  "openai-plugin-names": "https://rapp-agent-builder.azurewebsites.net/names/mcp",
 };
 
 for (const [dir, url] of Object.entries(packages)) {

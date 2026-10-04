@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.kody-w/rapp-name-finder",
+  "description": "Name a business or project; check free domains (with prices) and GitHub names for up to 8 names at once.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/kody-w/rapp-chatgpt",
+    "source": "github"
+  },
+  "websiteUrl": "https://kody-w.github.io/rapp-chatgpt/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/names/mcp"
+    }
+  ]
+}

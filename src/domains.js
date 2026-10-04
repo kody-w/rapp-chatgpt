@@ -149,3 +149,33 @@ export async function registerAtPorkbun(env, domain) {
   const body = await porkbun(c, `/domain/create/${domain}`, { cost: rq.cost_cents, agreeToTerms: "yes" });
   return { domain, years: rq.years, registrar: "porkbun", sandbox: !!body.sandbox, registrar_cost_usd: rq.cost_cents / 100, order_id: body.orderId || body.order_id || null };
 }
+
+// --- Business names: check candidate names across the domain endings that matter, plus the GitHub handle.
+const DEFAULT_ENDINGS = ["com", "co", "ai", "io", "app"];
+export const slugify = (n) => String(n || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9-]+/g, "").replace(/^-+|-+$/g, "").slice(0, 63);
+
+async function githubFree(slug) {
+  try {
+    const r = await fetch(`https://api.github.com/users/${slug}`, { headers: { "User-Agent": "rapp-names", accept: "application/vnd.github+json" } });
+    if (r.status === 404) return "free";
+    if (r.ok) return "taken";
+  } catch {}
+  return "unknown";
+}
+
+export async function checkNames({ names, endings }) {
+  const slugs = [...new Set((names || []).map(slugify).filter((s) => s.length >= 2))].slice(0, 8);
+  const ends = [...new Set((endings?.length ? endings : DEFAULT_ENDINGS).map((e) => String(e).replace(/^\./, "").toLowerCase()))].slice(0, 5);
+  if (!slugs.length) return { text: "Give one or more candidate names, like ['Northwind Bakery', 'Rise & Crumb'].", structured: { results: [] }, isError: true };
+  const domains = slugs.flatMap((s) => ends.map((e) => `${s}.${e}`)).slice(0, 40);
+  const checked = [];
+  for (let i = 0; i < domains.length; i += 20) checked.push(...(await checkDomains({ domains: domains.slice(i, i + 20) })).structured.results);
+  const gh = Object.fromEntries(await Promise.all(slugs.map(async (s) => [s, await githubFree(s)])));
+  const results = slugs.map((s) => {
+    const mine = checked.filter((r) => r.domain.startsWith(s + "."));
+    const free = mine.filter((r) => r.status === "available");
+    return { name: s, free_domains: free.map((r) => ({ domain: r.domain, price_usd: r.price_usd, years: r.years })), taken: mine.filter((r) => r.status === "taken").map((r) => r.domain), github: gh[s], score: free.length + (gh[s] === "free" ? 1 : 0) + (free.some((r) => r.domain.endsWith(".com")) ? 2 : 0) };
+  }).sort((a, b) => b.score - a.score);
+  const line = (r) => `${r.name}: ${r.free_domains.length ? r.free_domains.map((f) => `${f.domain} $${f.price_usd}`).join(", ") : "no free domains among those checked"}${r.github === "free" ? " · GitHub name free" : r.github === "taken" ? " · GitHub name taken" : ""}`;
+  return { text: "Best first (a free .com counts most):\n" + results.map(line).join("\n") + "\n\nTo buy a domain, use register_domain.", structured: { results } };
+}

@@ -25,6 +25,11 @@
       "name": "rapp-domains",
       "source": "./claude-plugins/rapp-domains",
       "description": "Check and price domain names, and learn how to register them."
+    },
+    {
+      "name": "rapp-name-finder",
+      "source": "./claude-plugins/rapp-name-finder",
+      "description": "Name a business or project and check free domains and GitHub names."
     }
   ]
 }

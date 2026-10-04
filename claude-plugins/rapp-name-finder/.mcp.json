@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rapp-name-finder": {
+      "type": "http",
+      "url": "https://rapp-agent-builder.azurewebsites.net/names/mcp"
+    }
+  }
+}

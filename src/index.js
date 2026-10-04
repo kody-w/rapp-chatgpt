@@ -26,7 +26,8 @@ const TOOLS = [
     name: "get_agent_template",
     title: "Get the agent template",
     description:
-      "Use this when the user wants to build an AI agent from an idea, a process description, or a meeting transcript. " +
+      "Use this when the user wants to build an AI agent, assistant, bot or automation from an idea, a repetitive task, a process description, " +
+      "or a meeting transcript (for example: automate invoices, triage support tickets, summarize meetings, follow up with leads). " +
       "Returns the official single-file RAPP agent template and its rules. Fill it in yourself from what the user described, " +
       "then call check_agent on the finished file before showing it to the user. Then call use_agent_here so the user can use it right away in this chat.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
@@ -53,7 +54,8 @@ const TOOLS = [
     name: "find_agents",
     title: "Find existing agents",
     description:
-      "Searches the public RAPP Agent Registry (RAR, about 1,700 single-file agents) for agents that already do what the user wants. " +
+      "Searches the public RAPP Agent Registry (RAR, about 1,700 single-file agents) for agents that already do what the user wants, " +
+      "for example when they ask 'is there an AI tool for...' or want a ready-made automation instead of building one. " +
       "Use it before building from scratch, or when the user asks whether an agent exists for a task.",
     inputSchema: {
       type: "object",
@@ -170,6 +172,24 @@ const TOOLS = [
     annotations: { ...READ_ONLY, openWorldHint: true },
   },
   {
+    name: "check_names",
+    title: "Check business names",
+    description:
+      "Use when someone is naming a business, startup, product, brand, app, side hustle, shop, podcast or project. Brainstorm candidate names first, " +
+      "then check up to 8 at once: for each, which domains (.com, .co, .ai, .io, .app by default) are free with prices, and whether the GitHub name is free. " +
+      "Results are ranked, a free .com counts most. Suggest new candidates and check again if the best ones are taken.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        names: { type: "array", items: { type: "string" }, maxItems: 8, description: "Candidate names, e.g. [\"Rise and Crumb\", \"Northwind Bakery\"]" },
+        endings: { type: "array", items: { type: "string" }, maxItems: 5, description: "Optional domain endings to check, e.g. [\"com\", \"shop\"]" },
+      },
+      required: ["names"],
+      additionalProperties: false,
+    },
+    annotations: { ...READ_ONLY, openWorldHint: true },
+  },
+  {
     name: "register_domain",
     title: "How to register a domain",
     description: "Use when the user wants to buy an available domain. Explains how to register it: AI agents pay per call; people ask us and we register it for them. Nothing is bought by this tool.",
@@ -213,6 +233,13 @@ const PROFILES = {
     instructions:
       "Find free, ready-made AI agents for a task in the public RAPP Agent Registry: find_agents, then get_agent_code for the best match, then " +
       "use_agent_here to run it in this chat on the user's own data. Nothing to install.",
+  },
+  names: {
+    server: { name: "rapp-name-finder", version: "1.0.0" },
+    tools: ["check_names", "check_domain", "register_domain", "request_service"],
+    instructions:
+      "Help people name a business, product or project and make sure they can actually own the name: brainstorm candidates that fit what they " +
+      "describe, check them with check_names, explain the trade-offs in plain words, and keep iterating until they have a name with a free domain.",
   },
   domains: {
     server: { name: "rapp-domains", version: "1.0.0" },
@@ -537,6 +564,7 @@ async function callTool(name, args) {
     case "world_now": return worldNow();
     case "fingerprint_text": return fingerprintText(args);
     case "request_service": return (await import("./signals.js")).recordRequest(activeEnv, { request: args.request, listing: currentListing });
+    case "check_names": return (await import("./domains.js")).checkNames(args);
     case "check_domain": return (await import("./domains.js")).checkDomains(args);
     case "register_domain": return (await import("./domains.js")).registerInfo(args, SITE);
     default: return null;
@@ -796,7 +824,7 @@ export default {
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, listings: Object.fromEntries(Object.entries(PROFILES).map(([k, p]) => [p.server.name, { version: p.server.version, mcp: `${url.origin}${k === "builder" ? "" : "/" + k}/mcp` }])), site: SITE });
     }
-    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world", "/domains/mcp": "domains" }[url.pathname];
+    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world", "/domains/mcp": "domains", "/names/mcp": "names" }[url.pathname];
     if (!route) return json({ error: "not found" }, 404);
     const profile = PROFILES[route];
     if (request.method === "GET") return new Response("SSE stream not offered; POST JSON-RPC to /mcp.", { status: 405, headers: { Allow: "POST", ...CORS } });
