@@ -308,8 +308,13 @@ async function loadRegistry() {
   return agents;
 }
 
+const STOPWORDS = new Set(["agent", "the", "for", "that", "with", "and", "are", "there", "any", "can", "help", "this", "from", "into", "find", "what", "which", "who", "how", "something", "thing", "one", "need", "want", "please", "show", "give", "get", "use", "tool", "app"]);
+
 export function searchAgents(agents, query, limit = 5) {
-  const words = query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  // Light stemming so "invoices" also matches "invoice".
+  const words = query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2)
+    .map((w) => (w.length > 4 && w.endsWith("ies") ? w.slice(0, -3) + "y" : w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
+    .filter((w) => !STOPWORDS.has(w));
   if (!words.length) return [];
   const scored = agents.map((a) => {
     const title = `${a.display_name} ${a.name}`.toLowerCase();
@@ -522,6 +527,129 @@ async function handleRpc(msg, profile = PROFILES.builder) {
   }
 }
 
+// ---------- agent-readable discovery: llms.txt, /.well-known/mcp.json, A2A agent card ----------
+
+function llmsTxt(origin) {
+  return `# RAPP
+
+> AI agents anyone can use. Three free, read-only MCP servers: build a single-file AI agent from an idea and run it on the user's data, find one of about 1,700 ready-made agents, or get verified world numbers with a public SHA-256 fingerprint. No account, no API key, nothing stored.
+
+## MCP servers (streamable HTTP, no auth)
+
+- [RAPP Agent Builder](${origin}/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
+- [RAR Agent Finder](${origin}/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
+- [DOGG World Check](${origin}/world/mcp): world_now, fingerprint_text
+
+## A2A
+
+- [Agent card](${origin}/.well-known/agent-card.json): JSON-RPC message/send at ${origin}/a2a. Skills: find_agents, world_now, agent_template.
+
+## Docs
+
+- [Website](${SITE}): what it does, in plain words
+- [Source](https://github.com/kody-w/rapp-chatgpt): server code, listing packages, tests
+- [Agent registry](https://kody-w.github.io/RAR/): the public RAPP Agent Registry
+- [Privacy](${SITE}privacy.html) and [Terms](${SITE}terms.html)
+`;
+}
+
+function mcpWellKnown(origin) {
+  return {
+    servers: Object.entries(PROFILES).map(([k, p]) => ({
+      name: p.server.name,
+      version: p.server.version,
+      description: p.instructions,
+      transport: "streamable-http",
+      url: `${origin}${k === "builder" ? "" : "/" + k}/mcp`,
+      authentication: "none",
+      tools: p.tools,
+    })),
+    website: SITE,
+    llms_txt: `${origin}/llms.txt`,
+  };
+}
+
+const A2A_SKILLS = [
+  { id: "find_agents", name: "Find agents", description: "Search the public RAPP Agent Registry (about 1,700 single-file agents) for agents that do a task. Send the task in plain words.", tags: ["agents", "registry", "search"], examples: ["agents that summarize sales calls", "invoice processing"] },
+  { id: "world_now", name: "World now", description: "Verified snapshot of world numbers right now (Bitcoin, FX, earthquakes, space weather, ISS) with the public DOGG tick, time and SHA-256 fingerprint.", tags: ["world-data", "verification"], examples: ["what is happening in the world right now"] },
+  { id: "agent_template", name: "Agent template", description: "The official single-file RAPP agent template and its rules, so the calling agent can write a new agent.", tags: ["agents", "template"], examples: ["give me the agent template"] },
+];
+
+function agentCard(origin) {
+  return {
+    name: "RAPP",
+    description: "AI agents anyone can use: find ready-made agents, get the template to build one, and get verified world numbers. Read-only, no auth, nothing stored.",
+    // A2A 1.0 lists endpoints here; the 0.3 fields below keep older clients working on the same endpoint.
+    supportedInterfaces: [
+      { url: `${origin}/a2a`, protocolBinding: "JSONRPC", protocolVersion: "1.0", tenant: "" },
+      { url: `${origin}/a2a`, protocolBinding: "JSONRPC", protocolVersion: "0.3", tenant: "" },
+    ],
+    protocolVersion: "0.3.0",
+    url: `${origin}/a2a`,
+    preferredTransport: "JSONRPC",
+    securitySchemes: {},
+    securityRequirements: [],
+    iconUrl: `${SITE}icon-256.png`,
+    version: PROFILES.builder.server.version,
+    provider: { organization: "Wildhaven Homes LLC", url: SITE },
+    documentationUrl: `${origin}/llms.txt`,
+    capabilities: { streaming: false, pushNotifications: false },
+    defaultInputModes: ["text/plain"],
+    defaultOutputModes: ["text/plain", "application/json"],
+    skills: A2A_SKILLS,
+  };
+}
+
+// Deterministic skill routing: an explicit metadata.skill wins; otherwise simple keyword matching.
+export function pickSkill(text, meta = {}) {
+  if (meta && A2A_SKILLS.some((k) => k.id === meta.skill)) return meta.skill;
+  const t = (text || "").toLowerCase();
+  if (/\b(world|right now|bitcoin|btc|exchange rate|earthquake|space weather|iss|fingerprint)\b/.test(t)) return "world_now";
+  if (/\btemplate\b/.test(t)) return "agent_template";
+  return "find_agents";
+}
+
+async function handleA2A(msg) {
+  const { id, method, params = {} } = msg || {};
+  const err = (code, message) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
+  const v1 = method === "SendMessage";
+  if (!v1 && method !== "message/send") return err(-32601, `Method not found: ${method}. Supported: SendMessage (A2A 1.0), message/send (A2A 0.3)`);
+  const m = params.message || {};
+  const text = (m.parts || []).filter((p) => typeof p.text === "string").map((p) => p.text).join("\n").trim();
+  const skill = pickSkill(text, m.metadata || params.metadata);
+  let r;
+  if (skill === "world_now") r = await worldNow();
+  else if (skill === "agent_template") r = getTemplate();
+  else r = await findAgents({ query: text, limit: 5 });
+  usage({ server: { name: "rapp-a2a" } }, skill, !r.isError);
+  const contextId = m.contextId || crypto.randomUUID();
+  if (v1) {
+    return {
+      jsonrpc: "2.0",
+      id,
+      result: {
+        message: {
+          messageId: crypto.randomUUID(),
+          contextId,
+          role: "ROLE_AGENT",
+          parts: [{ text: r.text }, { data: { skill, ...r.structured }, mediaType: "application/json" }],
+        },
+      },
+    };
+  }
+  return {
+    jsonrpc: "2.0",
+    id,
+    result: {
+      kind: "message",
+      role: "agent",
+      messageId: crypto.randomUUID(),
+      contextId,
+      parts: [{ kind: "text", text: r.text }, { kind: "data", data: { skill, ...r.structured } }],
+    },
+  };
+}
+
 // Usage counting: which listing and tool, and whether it worked. Never arguments or content.
 function usage(profile, tool, ok) {
   console.log(JSON.stringify({ evt: "tool_call", listing: profile.server.name, tool, ok }));
@@ -547,6 +675,15 @@ export default {
       return token
         ? new Response(token.trim(), { headers: { "Content-Type": "text/plain" } })
         : new Response("not configured", { status: 404 });
+    }
+    if (url.pathname === "/llms.txt") return new Response(llmsTxt(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
+    if (url.pathname === "/.well-known/mcp.json") return json(mcpWellKnown(url.origin));
+    if (url.pathname === "/.well-known/agent-card.json" || url.pathname === "/.well-known/agent.json") return json(agentCard(url.origin));
+    if (url.pathname === "/a2a") {
+      if (request.method !== "POST") return json(agentCard(url.origin));
+      let msg;
+      try { msg = await request.json(); } catch { return json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400); }
+      return json(await handleA2A(msg));
     }
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, listings: Object.fromEntries(Object.entries(PROFILES).map(([k, p]) => [p.server.name, { version: p.server.version, mcp: `${url.origin}${k === "builder" ? "" : "/" + k}/mcp` }])), site: SITE });
