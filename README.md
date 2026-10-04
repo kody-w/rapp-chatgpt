@@ -30,7 +30,7 @@ npx wrangler dev                                   # local server on :8787
 node test/check_real_agents.mjs ../RAR             # checker vs. the template and every registry agent
 test/mcp_smoke.sh http://localhost:8787            # drive the MCP endpoint
 npx wrangler deploy                                # Cloudflare host
-azure/deploy.sh                                    # or Azure Functions (personal subscription only)
+azure/deploy.sh                                    # or Azure Functions
 ```
 
 Listing copy for the ChatGPT app directory is in [SUBMISSION.md](SUBMISSION.md).

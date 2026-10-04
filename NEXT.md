@@ -4,7 +4,7 @@ Checkpoint `v1.2.0`. Three listings, one server. Everything below is ready; noth
 
 | Piece | State |
 |---|---|
-| MCP server | Live on Azure Functions (personal subscription, rg `rapp-chatgpt`): https://rapp-agent-builder.azurewebsites.net/mcp — v1.1.1, 6 tools |
+| MCP server | Live on Azure Functions (rg `rapp-chatgpt`): https://rapp-agent-builder.azurewebsites.net/mcp — v1.1.1, 6 tools |
 | Site, privacy, terms | https://kody-w.github.io/rapp-chatgpt/ |
 | Demo video | https://kody-w.github.io/rapp-chatgpt/demo.mp4 (set as `review.demo_recording_url`) |
 | Listings | `openai-plugin/` RAPP Agent Builder (`/mcp`), `openai-plugin-finder/` RAR Agent Finder (`/finder/mcp`), `openai-plugin-world/` DOGG World Check (`/world/mcp`) |
@@ -37,10 +37,10 @@ for d in openai-plugin openai-plugin-finder openai-plugin-world; do (cd $d && zi
 node --test test/plugin_package.test.mjs          # listing limits
 node test/check_real_agents.mjs ../RAR            # checker vs. every registry agent
 test/mcp_smoke.sh https://rapp-agent-builder.azurewebsites.net
-AZURE_CONFIG_DIR=~/.azure-personal az login --use-device-code --tenant wildfeueroutlook.onmicrosoft.com   # if the az session expires
+AZURE_CONFIG_DIR=~/.azure-personal az login --use-device-code --tenant <rapp tenant>   # if the az session expires
 ```
 
-The default `az` login on this Mac is the Microsoft work tenant. Always use `AZURE_CONFIG_DIR=~/.azure-personal`; `azure/deploy.sh` does, and refuses an @microsoft.com account.
+Always deploy with `AZURE_CONFIG_DIR=~/.azure-personal`; `azure/deploy.sh` does, and refuses any account other than `RAPP_AZ_USER` in `azure/.env.local`.
 
 ## Other directories (no OpenAI approval needed)
 

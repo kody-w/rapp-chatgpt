@@ -1,12 +1,14 @@
 #!/bin/bash
-# Deploys to Kody's PERSONAL Azure subscription only. Uses an isolated az profile so the
-# Microsoft work login on this machine can never be the target.
+# Deploys to the RAPP Azure subscription only, from an isolated az profile. The expected account
+# lives in azure/.env.local (untracked): RAPP_AZ_USER=<account email>.
 set -euo pipefail
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 export AZURE_CONFIG_DIR="$HOME/.azure-personal"
 cd "$(dirname "$0")"
 USER_NAME=$(az account show --query user.name -o tsv)
-[[ "$USER_NAME" == *@microsoft.com ]] && { echo "Refusing: logged in as a Microsoft work account ($USER_NAME)"; exit 1; }
+[ -f .env.local ] && . ./.env.local
+[ -n "${RAPP_AZ_USER:-}" ] || { echo "Set RAPP_AZ_USER in azure/.env.local first"; exit 1; }
+[ "$USER_NAME" = "$RAPP_AZ_USER" ] || { echo "Refusing: signed in as $USER_NAME, expected $RAPP_AZ_USER"; exit 1; }
 RG=${RG:-rapp-chatgpt}; LOC=${LOC:-eastus2}; APP=${APP:-rapp-agent-builder}
 SA=${SA:-rappagentbuilder$(az account show --query id -o tsv | tr -d - | cut -c1-6)}
 rm -rf src/core && mkdir -p src/core && cp ../src/index.js ../src/template.js ../src/paid.js ../src/domains.js src/core/
