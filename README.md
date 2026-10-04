@@ -19,7 +19,8 @@ points at the public installer.
 | `check_agent` | Checks a finished agent file against the rules |
 | `find_agents` | Searches the registry |
 | `get_agent_code` | Returns one registry agent's source |
-| `how_to_run_agent` | Install and run steps for Mac, Windows, Linux |
+| `use_agent_here` | Runner so ChatGPT runs the agent in the chat on the user's data |
+| `how_to_run_agent` | Optional: keep it on your computer (Mac, Windows, Linux) |
 
 ## Develop
 

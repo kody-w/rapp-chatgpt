@@ -4,7 +4,7 @@
 
 import { TEMPLATE } from "./template.js";
 
-const SERVER = { name: "rapp-agent-builder", version: "1.0.0" };
+const SERVER = { name: "rapp-agent-builder", version: "1.1.0" };
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const REGISTRY_URL = "https://kody-w.github.io/RAR/registry.json";
 const RAW_BASE = "https://raw.githubusercontent.com/kody-w/RAR/main/";
@@ -26,7 +26,7 @@ const TOOLS = [
     description:
       "Use this when the user wants to build an AI agent from an idea, a process description, or a meeting transcript. " +
       "Returns the official single-file RAPP agent template and its rules. Fill it in yourself from what the user described, " +
-      "then call check_agent on the finished file before showing it to the user.",
+      "then call check_agent on the finished file before showing it to the user. Then call use_agent_here so the user can use it right away in this chat.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: READ_ONLY,
   },
@@ -77,9 +77,25 @@ const TOOLS = [
     annotations: { ...READ_ONLY, openWorldHint: true },
   },
   {
+    name: "use_agent_here",
+    title: "Use the agent in this chat",
+    description:
+      "Use this right after an agent passes check_agent, or whenever the user wants to try an agent. Returns a short Python runner so you can run the agent " +
+      "in this chat with your own Python tool on the user's own data (pasted text, an uploaded spreadsheet, a list). Nothing to install. " +
+      "Ask the user for their real data, run the agent, and show the result in plain words.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filename: { type: "string", description: "The agent file name, e.g. invoice_triage_agent.py" },
+      },
+      additionalProperties: false,
+    },
+    annotations: READ_ONLY,
+  },
+  {
     name: "how_to_run_agent",
-    title: "How to run an agent",
-    description: "Step-by-step instructions for running an agent file on the user's own computer with the free RAPP Brainstem.",
+    title: "Keep an agent running on your computer",
+    description: "Optional, for later: how to keep an agent running on the user's own computer with the free RAPP Brainstem. Only offer this after the user has used the agent in the chat and wants to keep it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -110,7 +126,7 @@ function getTemplate() {
     text:
       "Fill in this template from what the user described. Rules:\n- " + RULES.join("\n- ") +
       "\n\nAllowed categories: " + CATEGORIES.join(", ") +
-      "\n\nWhen done, call check_agent. Then show the user the file and offer how_to_run_agent." +
+      "\n\nWhen done, call check_agent. Then call use_agent_here and offer to run it right now on the user's own data in this chat. Keeping it on their computer (how_to_run_agent) is optional and comes later." +
       "\n\n----- template_agent.py -----\n" + TEMPLATE,
     structured: { rules: RULES, categories: CATEGORIES, template: TEMPLATE },
   };
@@ -260,6 +276,31 @@ async function getAgentCode({ name }) {
   return { text: `${a.display_name} (${a.name} v${a.version})\n\n${code}`, structured: { found: true, name: a.name, code_url: RAW_BASE + a.file, code } };
 }
 
+function useHere({ filename }) {
+  const f = filename || "your_agent.py";
+  const runner = [
+    "import importlib.util, inspect, json",
+    `spec = importlib.util.spec_from_file_location("agent", "${f}")  # save the agent file here first`,
+    "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)",
+    "Agent = next(c for _, c in inspect.getmembers(mod, inspect.isclass)",
+    "             if c.__module__ == mod.__name__ and c.__name__ != 'BasicAgent' and hasattr(c, 'perform'))",
+    "agent = Agent()",
+    "args = {}  # fill from the user's data, matching agent.metadata['parameters']",
+    "print(agent.perform(**args))",
+  ].join("\n");
+  const steps = [
+    `Save the agent code to ${f} in your Python environment.`,
+    "Ask the user for their real data if you don't have it yet (paste, upload, or a few rows). Offer a short sample only if they want to see it first.",
+    "Run the runner below with args built from that data.",
+    "Show the result in plain words. Don't show the runner unless they ask.",
+    "Afterwards, mention they can keep the file and run it on their own computer any time (how_to_run_agent).",
+  ];
+  return {
+    text: "Use the agent right here, nothing to install:\n" + steps.map((s, i) => `${i + 1}. ${s}`).join("\n") + "\n\n```python\n" + runner + "\n```",
+    structured: { steps, runner },
+  };
+}
+
 function howToRun({ os, filename }) {
   const f = filename || "your_agent.py";
   const install = os === "windows"
@@ -273,7 +314,7 @@ function howToRun({ os, filename }) {
     "Open http://localhost:7071 and ask for what the agent does. The Brainstem picks it up automatically.",
   ];
   return {
-    text: steps.map((s, i) => `${i + 1}. ${s}`).join("\n") + `\n\nMore: ${SITE}`,
+    text: "Optional: keep this agent running on your own computer.\n" + steps.map((s, i) => `${i + 1}. ${s}`).join("\n") + `\n\nMore: ${SITE}`,
     structured: { steps, install_command: install, agents_folder: folder },
   };
 }
@@ -290,6 +331,7 @@ async function callTool(name, args) {
     }
     case "find_agents": return findAgents(args);
     case "get_agent_code": return getAgentCode(args);
+    case "use_agent_here": return useHere(args);
     case "how_to_run_agent": return howToRun(args);
     default: return null;
   }
@@ -310,7 +352,7 @@ async function handleRpc(msg) {
         protocolVersion: v,
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER,
-        instructions: "Build single-file AI agents for the free RAPP Brainstem: get_agent_template, write the agent, check_agent until it passes, then how_to_run_agent. Use find_agents to reuse existing ones.",
+        instructions: "Build single-file AI agents people can use immediately: get_agent_template, write the agent, check_agent until it passes, then use_agent_here to run it in this chat on the user's own data. Nothing to install. Use find_agents to reuse existing ones. how_to_run_agent is only for keeping an agent on their own computer later.",
       });
     }
     case "ping": return ok({});
