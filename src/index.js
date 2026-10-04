@@ -745,8 +745,8 @@ export default {
       const produce = url.pathname === "/x402/domains/register"
         ? async () => {
             const { orderQuote, registerAtPorkbun } = await import("./domains.js");
-            const q = await orderQuote(url.searchParams.get("domain"));
-            return registerAtPorkbun(env, q.domain, q.years);
+            const q = await orderQuote(url.searchParams.get("domain"), env);
+            return registerAtPorkbun(env, q.domain);
           }
         : async () => {
             const r = await worldNow();

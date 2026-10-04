@@ -96,33 +96,53 @@ export function registerInfo({ domain }, site) {
   };
 }
 
-// --- Fulfilment through Porkbun (paid path). Off until keys are set; dry run unless PORKBUN_LIVE=1.
+// --- Fulfilment through Porkbun (paid path). Off until keys are set.
+// Sandbox keys (pk1_sb_) only ever touch Porkbun's sandbox. Live keys refuse to buy unless PORKBUN_LIVE=1.
 function porkbunConfig(env = {}) {
   const get = (k) => env[k] || globalThis.process?.env?.[k];
-  return { key: get("PORKBUN_API_KEY"), secret: get("PORKBUN_SECRET_KEY"), live: get("PORKBUN_LIVE") === "1", base: get("PORKBUN_BASE") || "https://api.porkbun.com/api/json/v3" };
+  const key = get("PORKBUN_API_KEY");
+  return { key, secret: get("PORKBUN_SECRET_KEY"), sandbox: !!key && key.startsWith("pk1_sb_"), live: get("PORKBUN_LIVE") === "1", base: get("PORKBUN_BASE") || "https://api.porkbun.com/api/json/v3" };
 }
 
 export function fulfilmentReady(env) {
   return !!porkbunConfig(env).key;
 }
 
-export async function orderQuote(domain) {
+async function porkbun(c, path, extra = {}) {
+  const res = await fetch(`${c.base}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apikey: c.key, secretapikey: c.secret, ...extra }) });
+  const body = await res.json().catch(() => ({}));
+  if (body.status !== "SUCCESS") throw new Error(body.message || `registrar returned ${res.status}`);
+  return body;
+}
+
+// The registrar's own quote: availability, premium status, minimum term and the exact cost we will pay.
+async function registrarQuote(c, domain) {
+  const q = (await porkbun(c, `/domain/checkDomain/${domain}`)).response;
+  if (q.avail !== "yes") throw new Error(`${domain} is not available`);
+  if (q.premium === "yes") throw new Error(`${domain} is a premium domain, not sold through this service yet`);
+  const years = Number(q.minDuration) || 1;
+  return { years, cost_cents: Math.round(Number(q.price) * years * 100), per_year: Number(q.price) };
+}
+
+export async function orderQuote(domain, env = {}) {
   const d = normalizeDomain(domain);
   if (!d) throw new Error("invalid domain");
   const [r] = (await checkDomains({ domains: [d] })).structured.results;
   if (r.status !== "available") throw new Error(`${d} is ${r.status}`);
   if (!r.price_usd) throw new Error(`.${d.split(".").pop()} is not supported`);
+  // When the registrar is connected, its live quote is authoritative (catches premium and price changes).
+  const c = porkbunConfig(env);
+  if (c.key) {
+    const rq = await registrarQuote(c, d);
+    return { ...r, years: rq.years, price_usd: quote(rq.per_year, rq.years) };
+  }
   return r;
 }
 
-export async function registerAtPorkbun(env, domain, years) {
+export async function registerAtPorkbun(env, domain) {
   const c = porkbunConfig(env);
-  const res = await fetch(`${c.base}/domain/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apikey: c.key, secretapikey: c.secret, domain, years, dryRun: !c.live }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (body.status !== "SUCCESS") throw new Error(body.message || `registrar returned ${res.status}`);
-  return { domain, years, dry_run: !c.live, registrar: "porkbun", registrar_response: body };
+  if (!c.sandbox && !c.live) throw new Error("live registration is switched off");
+  const rq = await registrarQuote(c, domain);
+  const body = await porkbun(c, `/domain/create/${domain}`, { cost: rq.cost_cents, agreeToTerms: "yes" });
+  return { domain, years: rq.years, registrar: "porkbun", sandbox: !!body.sandbox, registrar_cost_usd: rq.cost_cents / 100, order_id: body.orderId || body.order_id || null };
 }

@@ -26,7 +26,7 @@ export function paidConfig(env = {}) {
   };
 }
 
-async function server(cfg) {
+async function server(cfg, env = {}) {
   const key = JSON.stringify(cfg);
   if (cached && cached.key === key) return cached.http;
   const resource = new x402ResourceServer(new HTTPFacilitatorClient({ url: cfg.facilitator })).register("eip155:*", new ExactEvmScheme());
@@ -42,7 +42,7 @@ async function server(cfg) {
         scheme: "exact",
         network: cfg.network,
         payTo: cfg.payTo,
-        price: async (ctx) => `$${(await orderQuote(ctx.adapter.getQueryParam?.("domain"))).price_usd}`,
+        price: async (ctx) => `$${(await orderQuote(ctx.adapter.getQueryParam?.("domain"), env)).price_usd}`,
       },
       description: "RAPP Domains: register an available domain name. Charged only if registration succeeds.",
       mimeType: "application/json",
@@ -84,11 +84,11 @@ export async function handlePaid(request, env, produce, log = () => {}, cors = {
     if (!fulfilmentReady(env)) {
       return new Response(JSON.stringify({ error: "Domain registration is not switched on yet." }), { status: 503, headers: { "Content-Type": "application/json", ...cors } });
     }
-    try { await orderQuote(url.searchParams.get("domain")); } catch (e) {
+    try { await orderQuote(url.searchParams.get("domain"), env); } catch (e) {
       return new Response(JSON.stringify({ error: `Can't sell this domain: ${e.message}.` }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
     }
   }
-  const http = await server(cfg);
+  const http = await server(cfg, env);
   const result = await http.processHTTPRequest({
     adapter: adapterFor(request, url),
     path: url.pathname,
