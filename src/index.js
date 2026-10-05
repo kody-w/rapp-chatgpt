@@ -1,4 +1,4 @@
-// RAPP Agent Builder — a ChatGPT app (MCP server over streamable HTTP, stateless JSON responses).
+// Agent Builder — a ChatGPT app (MCP server over streamable HTTP, stateless JSON responses).
 // ChatGPT's own model writes the agent; this server supplies the template, checks the result,
 // searches the public RAR registry, and tells the user how to run it in their own Brainstem.
 
@@ -28,7 +28,7 @@ const TOOLS = [
     description:
       "Use this when the user wants to build an AI agent, assistant, bot or automation from an idea, a repetitive task, a process description, " +
       "or a meeting transcript (for example: automate invoices, triage support tickets, summarize meetings, follow up with leads). " +
-      "Returns the official single-file RAPP agent template and its rules. Fill it in yourself from what the user described, " +
+      "Returns the official single-file agent template and its rules. Fill it in yourself from what the user described, " +
       "then call check_agent on the finished file before showing it to the user. Then call use_agent_here so the user can use it right away in this chat.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: READ_ONLY,
@@ -37,7 +37,7 @@ const TOOLS = [
     name: "check_agent",
     title: "Check an agent file",
     description:
-      "Checks a finished RAPP agent file against the template rules (manifest, naming, class, perform method, no hardcoded secrets). " +
+      "Checks a finished agent file against the template rules (manifest, naming, class, perform method, no hardcoded secrets). " +
       "Call it on every agent you write, fix anything it reports, and call it again until it passes.",
     inputSchema: {
       type: "object",
@@ -54,7 +54,7 @@ const TOOLS = [
     name: "find_agents",
     title: "Find existing agents",
     description:
-      "Searches the public RAPP Agent Registry (RAR, about 1,700 single-file agents) for agents that already do what the user wants, " +
+      "Searches the public agent registry (about 1,700 single-file agents) for agents that already do what the user wants, " +
       "for example when they ask 'is there an AI tool for...' or want a ready-made automation instead of building one. " +
       "Use it before building from scratch, or when the user asks whether an agent exists for a task.",
     inputSchema: {
@@ -100,7 +100,7 @@ const TOOLS = [
   {
     name: "how_to_run_agent",
     title: "Keep an agent running on your computer",
-    description: "Optional, for later: how to keep an agent running on the user's own computer with the free RAPP Brainstem. Only offer this after the user has used the agent in the chat and wants to keep it.",
+    description: "Optional, for later: how to keep an agent running on the user's own computer with the free Brainstem. Only offer this after the user has used the agent in the chat and wants to keep it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -116,7 +116,7 @@ const TOOLS = [
     title: "Share an agent with everyone",
     description:
       "Use only when the user says they want to share an agent they built. Checks the agent and scans it for personal details " +
-      "(emails, phone numbers, secrets), then explains how to publish it to the free public RAPP Agent Registry under their own GitHub account. " +
+      "(emails, phone numbers, secrets), then explains how to publish it to the free public agent registry under their own GitHub account. " +
       "Nothing is published by this tool.",
     inputSchema: {
       type: "object",
@@ -220,7 +220,7 @@ const TOOLS = [
 // Each ChatGPT listing is the same server with its own set of tools.
 const PROFILES = {
   builder: {
-    server: { name: "rapp-agent-builder", version: "1.2.0" },
+    server: { name: "agent-builder", version: "1.2.0" },
     tools: ["get_agent_template", "check_agent", "use_agent_here", "find_agents", "get_agent_code", "share_agent", "how_to_run_agent", "request_service"],
     instructions:
       "Build single-file AI agents people can use immediately: get_agent_template, write the agent, check_agent until it passes, then use_agent_here " +
@@ -228,28 +228,28 @@ const PROFILES = {
       "an agent on their own computer later. share_agent only when the user asks to share.",
   },
   finder: {
-    server: { name: "rar-agent-finder", version: "1.0.0" },
+    server: { name: "agent-finder", version: "1.0.0" },
     tools: ["find_agents", "get_agent_code", "use_agent_here", "how_to_run_agent", "request_service"],
     instructions:
-      "Find free, ready-made AI agents for a task in the public RAPP Agent Registry: find_agents, then get_agent_code for the best match, then " +
+      "Find free, ready-made AI agents for a task in the public agent registry: find_agents, then get_agent_code for the best match, then " +
       "use_agent_here to run it in this chat on the user's own data. Nothing to install.",
   },
   names: {
-    server: { name: "rapp-name-finder", version: "1.0.0" },
+    server: { name: "name-finder", version: "1.0.0" },
     tools: ["check_names", "check_domain", "register_domain", "request_service"],
     instructions:
       "Help people name a business, product or project and make sure they can actually own the name: brainstorm candidates that fit what they " +
       "describe, check them with check_names, explain the trade-offs in plain words, and keep iterating until they have a name with a free domain.",
   },
   domains: {
-    server: { name: "rapp-domains", version: "1.0.0" },
+    server: { name: "domain-check", version: "1.0.0" },
     tools: ["check_domain", "register_domain", "request_service"],
     instructions:
       "Help people and agents find and register domain names: suggest good names, check them with check_domain (up to 20 at once), " +
       "and explain how to buy with register_domain. Prices are in US dollars and include the first term.",
   },
   world: {
-    server: { name: "dogg-world-check", version: "1.0.0" },
+    server: { name: "world-check", version: "1.0.0" },
     tools: ["world_now", "fingerprint_text", "request_service"],
     instructions:
       "Give verified, citable numbers about the world right now with world_now: always quote the tick number, time and fingerprint with the numbers. " +
@@ -469,7 +469,7 @@ function howToRun({ os, filename }) {
     : "curl -fsSL https://kody-w.github.io/rapp-installer/install.sh | bash";
   const folder = os === "windows" ? "%USERPROFILE%\\.brainstem\\src\\rapp_brainstem\\agents\\" : "~/.brainstem/src/rapp_brainstem/agents/";
   const steps = [
-    `Install the free RAPP Brainstem (one line, in ${os === "windows" ? "PowerShell" : "Terminal"}): ${install}`,
+    `Install the free Brainstem (one line, in ${os === "windows" ? "PowerShell" : "Terminal"}): ${install}`,
     "Sign in with GitHub when it asks. The Brainstem uses your existing GitHub Copilot access.",
     `Save the agent as ${f} in ${folder}`,
     "Open http://localhost:7071 and ask for what the agent does. The Brainstem picks it up automatically.",
@@ -628,10 +628,10 @@ function llmsTxt(origin) {
 
 ## MCP servers (streamable HTTP, no auth)
 
-- [RAPP Agent Builder](${origin}/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
-- [RAR Agent Finder](${origin}/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
-- [DOGG World Check](${origin}/world/mcp): world_now, fingerprint_text
-- [RAPP Domains](${origin}/domains/mcp): check_domain, register_domain
+- [Agent Builder](${origin}/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
+- [Agent Finder](${origin}/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
+- [World Check](${origin}/world/mcp): world_now, fingerprint_text
+- [Domain Check](${origin}/domains/mcp): check_domain, register_domain
 
 ## Pay per call (x402 v2, USDC)
 
@@ -646,7 +646,7 @@ function llmsTxt(origin) {
 
 - [Website](${SITE}): what it does, in plain words
 - [Source](https://github.com/kody-w/rapp-chatgpt): server code, listing packages, tests
-- [Agent registry](https://kody-w.github.io/RAR/): the public RAPP Agent Registry
+- [Agent registry](https://kody-w.github.io/RAR/): the public agent registry
 - [Privacy](${SITE}privacy.html) and [Terms](${SITE}terms.html)
 `;
 }
@@ -668,9 +668,9 @@ function mcpWellKnown(origin) {
 }
 
 const A2A_SKILLS = [
-  { id: "find_agents", name: "Find agents", description: "Search the public RAPP Agent Registry (about 1,700 single-file agents) for agents that do a task. Send the task in plain words.", tags: ["agents", "registry", "search"], examples: ["agents that summarize sales calls", "invoice processing"] },
-  { id: "world_now", name: "World now", description: "Verified snapshot of world numbers right now (Bitcoin, FX, earthquakes, space weather, ISS) with the public DOGG tick, time and SHA-256 fingerprint.", tags: ["world-data", "verification"], examples: ["what is happening in the world right now"] },
-  { id: "agent_template", name: "Agent template", description: "The official single-file RAPP agent template and its rules, so the calling agent can write a new agent.", tags: ["agents", "template"], examples: ["give me the agent template"] },
+  { id: "find_agents", name: "Find agents", description: "Search the public agent registry (about 1,700 single-file agents) for agents that do a task. Send the task in plain words.", tags: ["agents", "registry", "search"], examples: ["agents that summarize sales calls", "invoice processing"] },
+  { id: "world_now", name: "World now", description: "Verified snapshot of world numbers right now (Bitcoin, FX, earthquakes, space weather, ISS) with the public world tick, time and SHA-256 fingerprint.", tags: ["world-data", "verification"], examples: ["what is happening in the world right now"] },
+  { id: "agent_template", name: "Agent template", description: "The official single-file agent template and its rules, so the calling agent can write a new agent.", tags: ["agents", "template"], examples: ["give me the agent template"] },
 ];
 
 function agentCard(origin) {
@@ -719,7 +719,7 @@ async function handleA2A(msg) {
   if (skill === "world_now") r = await worldNow();
   else if (skill === "agent_template") r = getTemplate();
   else r = await findAgents({ query: text, limit: 5 });
-  usage({ server: { name: "rapp-a2a" } }, skill, !r.isError);
+  usage({ server: { name: "agent-a2a" } }, skill, !r.isError);
   const contextId = m.contextId || crypto.randomUUID();
   if (v1) {
     return {

@@ -1,13 +1,13 @@
-# RAPP
+# Agent Builder
 
 > AI agents anyone can use. Three free, read-only MCP servers: build a single-file AI agent from an idea and run it on the user's data, find one of about 1,700 ready-made agents, or get verified world numbers with a public SHA-256 fingerprint. No account, no API key, nothing stored.
 
 ## MCP servers (streamable HTTP, no auth)
 
-- [RAPP Agent Builder](https://rapp-agent-builder.azurewebsites.net/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
-- [RAR Agent Finder](https://rapp-agent-builder.azurewebsites.net/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
-- [DOGG World Check](https://rapp-agent-builder.azurewebsites.net/world/mcp): world_now, fingerprint_text
-- [RAPP Domains](https://rapp-agent-builder.azurewebsites.net/domains/mcp): check_domain, register_domain
+- [Agent Builder](https://rapp-agent-builder.azurewebsites.net/mcp): get_agent_template, check_agent, use_agent_here, find_agents, get_agent_code, share_agent, how_to_run_agent
+- [Agent Finder](https://rapp-agent-builder.azurewebsites.net/finder/mcp): find_agents, get_agent_code, use_agent_here, how_to_run_agent
+- [World Check](https://rapp-agent-builder.azurewebsites.net/world/mcp): world_now, fingerprint_text
+- [Domain Check](https://rapp-agent-builder.azurewebsites.net/domains/mcp): check_domain, register_domain
 
 ## Pay per call (x402 v2, USDC)
 
@@ -22,5 +22,5 @@
 
 - [Website](https://kody-w.github.io/rapp-chatgpt/): what it does, in plain words
 - [Source](https://github.com/kody-w/rapp-chatgpt): server code, listing packages, tests
-- [Agent registry](https://kody-w.github.io/RAR/): the public RAPP Agent Registry
+- [Agent registry](https://kody-w.github.io/RAR/): the public agent registry
 - [Privacy](https://kody-w.github.io/rapp-chatgpt/privacy.html) and [Terms](https://kody-w.github.io/rapp-chatgpt/terms.html)

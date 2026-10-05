@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "rar-agent-finder",
+  "name": "agent-finder",
   "version": "1.0.0",
-  "description": "Search about 1,700 free AI agents in the public RAPP Agent Registry and use one right away in ChatGPT.",
+  "description": "Search about 1,700 free AI agents in the public agent registry and use one right away in ChatGPT.",
   "author": {
     "name": "Wildhaven Homes LLC",
     "url": "https://kody-w.github.io/rapp-chatgpt/"
@@ -20,13 +20,13 @@
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "RAR Agent Finder",
+        "displayName": "Agent Finder",
         "shortDescription": "Find a free AI agent for it",
-        "longDescription": "Ask whether there's already an AI agent for a task, and RAR Agent Finder searches the public RAPP Agent Registry, about 1,700 free single-file agents for sales, operations, finance, support, meetings and more.\n\nIt shows the best matches in plain words, lets you read any agent's code, and then ChatGPT can use the agent right away on your own data in the same chat. Nothing to install and no account needed. If you want to keep an agent on your own computer later, it explains how.\n\nAll tools are read-only. The app never runs code on its own servers or connects to your accounts, and it stores nothing you send it.",
+        "longDescription": "Ask whether there's already an AI agent for a task, and Agent Finder searches the public agent registry, about 1,700 free single-file agents for sales, operations, finance, support, meetings and more.\n\nIt shows the best matches in plain words, lets you read any agent's code, and then ChatGPT can use the agent right away on your own data in the same chat. Nothing to install and no account needed. If you want to keep an agent on your own computer later, it explains how.\n\nAll tools are read-only. The app never runs code on its own servers or connects to your accounts, and it stores nothing you send it.",
         "developerName": "Wildhaven Homes LLC",
         "category": "Productivity",
         "capabilities": [
-          "Search about 1,700 free agents in the public RAPP Agent Registry",
+          "Search about 1,700 free agents in the public agent registry",
           "Show the best matches in plain words",
           "Read the full code of any agent",
           "Use an agent right away in the chat on your own data",
@@ -76,7 +76,7 @@
               "description": "Keep an agent on the user's computer",
               "prompt": "How do I keep a registry agent running on my Mac?",
               "tools_triggered": "how_to_run_agent",
-              "expected_behavior": "Four steps: the install command for the free RAPP Brainstem, GitHub sign-in, the agents folder path, and http://localhost:7071."
+              "expected_behavior": "Four steps: the install command for the free Brainstem, GitHub sign-in, the agents folder path, and http://localhost:7071."
             }
           ],
           "negative": [
@@ -95,11 +95,11 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "RAPP Agent Builder is free and does not sell products or process payments."
+        "commerce_description": "Agent Builder is free and does not sell products or process payments."
       },
       "publication": {
         "countries": [],
-        "release_notes": "First release. Search about 1,700 free AI agents in the public RAPP Agent Registry and use one right away in ChatGPT."
+        "release_notes": "First release. Search about 1,700 free AI agents in the public agent registry and use one right away in ChatGPT."
       }
     }
   }
