@@ -3,7 +3,7 @@
 // searches the public RAR registry, and tells the user how to run it in their own Brainstem.
 
 import { TEMPLATE } from "./template.js";
-import { BRAINSTEM_TOOLS, BRAINSTEM_INSTRUCTIONS, callBrainstemTool, CONNECT_PROMPT } from "./brainstem.js";
+import { handleBrainstemHttp } from "./brainstem.js";
 
 // The paid agent API (x402) loads its libraries only when a paid route is hit.
 const PAID_PREFIX = "/x402/";
@@ -220,11 +220,6 @@ const TOOLS = [
 
 // Each ChatGPT listing is the same server with its own set of tools.
 const PROFILES = {
-  brainstem: {
-    server: { name: "brainstem", version: "0.1.0" },
-    tools: BRAINSTEM_TOOLS.map((t) => t.name),
-    instructions: BRAINSTEM_INSTRUCTIONS,
-  },
   builder: {
     server: { name: "agent-builder", version: "1.2.0" },
     tools: ["get_agent_template", "check_agent", "use_agent_here", "find_agents", "get_agent_code", "share_agent", "how_to_run_agent", "request_service"],
@@ -588,7 +583,7 @@ async function callTool(name, args) {
 // ---------- MCP JSON-RPC ----------
 
 async function handleRpc(msg, profile = PROFILES.builder) {
-  const tools = profile === PROFILES.brainstem ? BRAINSTEM_TOOLS : TOOLS.filter((t) => profile.tools.includes(t.name));
+  const tools = TOOLS.filter((t) => profile.tools.includes(t.name));
   const { id, method, params = {} } = msg;
   const ok = (result) => ({ jsonrpc: "2.0", id, result });
   const err = (code, message) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
@@ -611,7 +606,7 @@ async function handleRpc(msg, profile = PROFILES.builder) {
       if (!tool) return err(-32602, `Unknown tool: ${params.name}`);
       try {
         currentListing = profile.server.name;
-        const r = profile === PROFILES.brainstem ? await callBrainstemTool(params.name, params.arguments || {}, activeEnv) : await callTool(params.name, params.arguments || {});
+        const r = await callTool(params.name, params.arguments || {});
         usage(profile, params.name, !r.isError);
         return ok({ content: [{ type: "text", text: r.text }], structuredContent: r.structured, isError: !!r.isError });
       } catch (e) {
@@ -773,6 +768,8 @@ export default {
   async fetch(request, env = {}) {
     activeEnv = env;
     const url = new URL(request.url);
+    const hatched = await handleBrainstemHttp(request, url);
+    if (hatched) return hatched;
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     // OpenAI domain verification: serve exactly the token the plugin portal issues.
     if (url.pathname === "/.well-known/openai-apps-challenge") {
@@ -826,7 +823,6 @@ export default {
         ? new Response(toCsv(st), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="wildhaven-ledger-${month}.csv"` } })
         : json(st);
     }
-    if (url.pathname === "/brainstem" || url.pathname === "/brainstem/connect.txt") return new Response(CONNECT_PROMPT(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
     if (url.pathname === "/llms.txt") return new Response(llmsTxt(url.origin), { headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS } });
     if (url.pathname === "/.well-known/mcp.json") return json(mcpWellKnown(url.origin));
     if (url.pathname === "/.well-known/agent-card.json" || url.pathname === "/.well-known/agent.json") return json(agentCard(url.origin));
@@ -839,7 +835,7 @@ export default {
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, listings: Object.fromEntries(Object.entries(PROFILES).map(([k, p]) => [p.server.name, { version: p.server.version, mcp: `${url.origin}${k === "builder" ? "" : "/" + k}/mcp` }])), site: SITE });
     }
-    const route = { "/brainstem/mcp": "brainstem", "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world", "/domains/mcp": "domains", "/names/mcp": "names" }[url.pathname];
+    const route = { "/mcp": "builder", "/finder/mcp": "finder", "/world/mcp": "world", "/domains/mcp": "domains", "/names/mcp": "names" }[url.pathname];
     if (!route) return json({ error: "not found" }, 404);
     const profile = PROFILES[route];
     if (request.method === "GET") return new Response("SSE stream not offered; POST JSON-RPC to /mcp.", { status: 405, headers: { Allow: "POST", ...CORS } });
